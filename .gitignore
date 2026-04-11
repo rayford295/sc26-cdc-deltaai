@@ -1,3 +1,5 @@
+submit.sh
+test_slurm.sh
 __pycache__/
 *.pyc
 *.pyo
@@ -7,8 +9,11 @@ __pycache__/
 dist/
 build/
 .env
+.DS_Store
 outputs/
+output/
 logs/
+weights/
 *.pt
 *.pth
 *.ckpt
