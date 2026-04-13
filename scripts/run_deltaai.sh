@@ -17,6 +17,7 @@ set -e
 
 # ── Environment ───────────────────────────────────────────────────────────────
 module purge
+module load default
 module load gcc/14.2.0
 module load python/miniforge3_pytorch/2.10.0
 conda activate base
