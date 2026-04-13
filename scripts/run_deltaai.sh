@@ -17,7 +17,7 @@ set -e
 
 # ── Environment ───────────────────────────────────────────────────────────────
 module purge
-module load gcc
+module load gcc/14.2.0
 module load python/miniforge3_pytorch/2.10.0
 conda activate base
 pip install ema-pytorch lpips --quiet
