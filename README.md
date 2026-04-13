@@ -4,6 +4,31 @@ Lossy image compression with Conditional Diffusion Models, adapted for running o
 
 Based on: [Lossy Image Compression with Conditional Diffusion Models](https://arxiv.org/pdf/2209.06950.pdf)
 
+## Current Evaluation Goal
+
+The current evaluation task is to:
+
+1. Apply the compression model on 100 drone images.
+2. Report the overall compression rate from the evaluation output.
+3. Compare the total size of the original images and the reconstructed images.
+4. Run the same evaluation workflow on both GPU targets when available:
+   - GH200
+   - H100
+
+For each run, collect and summarize the following outputs:
+- `compression_report.txt`
+- `compression_results.csv`
+- average BPP
+- overall compression ratio
+- total original image size
+- total reconstructed image size
+- file size ratio between original and reconstructed images
+
+Current execution status:
+- GH200 workflow is running on the `ghx4` partition.
+- H100 execution is still pending partition or access confirmation.
+- The x-param evaluation flow has been debugged on DeltaAI and now runs successfully for at least a validated single-image test.
+
 ## Repository Structure
 
 ```
