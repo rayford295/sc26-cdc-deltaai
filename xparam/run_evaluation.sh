@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cdc-evaluate
-#SBATCH --account=<your_allocation>        # TODO: replace with your allocation ID
-#SBATCH --partition=gpuA100x4             # DeltaAI A100 GPU partition
+#SBATCH --account=CIV25002
+#SBATCH --partition=gpuA100x4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -10,13 +10,13 @@
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/eval_%j.log
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=<your_email>           # TODO: replace with your email
+#SBATCH --mail-user=yyang48@illinois.edu
 
 set -e
 
-# ── Paths (edit these) ────────────────────────────────────────────────────────
-BASE=/scratch/<your_allocation>/$USER/cdc-deltaai    # TODO: replace allocation
-CKPT=$BASE/weights/<checkpoint_name>.pt              # TODO: replace checkpoint filename
+# ── Paths ─────────────────────────────────────────────────────────────────────
+BASE=/scratch/CIV25002/$USER/cdc-deltaai
+CKPT=$BASE/weights/xparam_ema.pt
 IMG_DIR=$BASE/data/imgs
 OUT_DIR=$BASE/output/evaluation
 CODE_DIR=$BASE/code/xparam
@@ -28,22 +28,22 @@ conda activate exp_pytorch
 mkdir -p $OUT_DIR
 mkdir -p $CODE_DIR/logs
 
-# ── Run evaluation on 100 drone images ───────────────────────────────────────
+# ── Run evaluation on drone images ────────────────────────────────────────────
 echo "Starting CDC compression evaluation..."
-echo "Images: $IMG_DIR"
-echo "Output: $OUT_DIR"
+echo "Images:     $IMG_DIR"
+echo "Output:     $OUT_DIR"
 echo "Checkpoint: $CKPT"
 
 cd $CODE_DIR
 
 python evaluate_compression.py \
-    --ckpt        $CKPT \
-    --img_dir     $IMG_DIR \
-    --out_dir     $OUT_DIR \
-    --n_images    100 \
-    --gamma       0.8 \
+    --ckpt           $CKPT \
+    --img_dir        $IMG_DIR \
+    --out_dir        $OUT_DIR \
+    --n_images       100 \
+    --gamma          0.8 \
     --n_denoise_step 65 \
-    --device      0 \
-    --lpips_weight 0.9
+    --device         0 \
+    --lpips_weight   0.9
 
 echo "Done. Results in: $OUT_DIR"
