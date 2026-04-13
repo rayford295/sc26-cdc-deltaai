@@ -21,7 +21,8 @@ module load default
 module load gcc/14.2.0
 module load python/miniforge3_pytorch/2.10.0
 conda activate base
-pip install --user ema-pytorch lpips --quiet
+export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
+python -m pip install --user ema-pytorch lpips --quiet
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE=/projects/bfod/yyang48/cdc-deltaai
@@ -38,7 +39,7 @@ echo "Output:   $OUT_BASE"
 
 cd $CODE_DIR
 
-# ── Loop over all epsilon_param checkpoints ────────────────────────────────────
+# ── Loop over all epsilon_param checkpoints ───────────────────────────────────
 for CKPT in \
     "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.0128-vbrFalse-noise-linear-aux-1.0_0_ckpt.pt" \
     "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.0256-vbrFalse-noise-linear-aux-1.0_0_ckpt.pt" \

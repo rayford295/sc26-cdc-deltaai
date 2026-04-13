@@ -27,7 +27,8 @@ module load default
 module load gcc/14.2.0
 module load python/miniforge3_pytorch/2.10.0
 conda activate base
-pip install --user ema-pytorch lpips --quiet
+export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
+python -m pip install --user ema-pytorch lpips --quiet
 
 mkdir -p $OUT_BASE
 mkdir -p $CODE_DIR/logs
