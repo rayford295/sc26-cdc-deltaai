@@ -22,7 +22,7 @@ OUT_DIR=$BASE/output/evaluation
 CODE_DIR=/u/yyang48/code/xparam
 
 # ── Environment ───────────────────────────────────────────────────────────────
-module load anaconda3_gpu
+module load python/anaconda3/2.10.0
 conda activate exp_pytorch
 
 mkdir -p $OUT_DIR

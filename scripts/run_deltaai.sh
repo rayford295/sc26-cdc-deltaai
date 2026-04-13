@@ -15,7 +15,7 @@
 
 # ── Environment ───────────────────────────────────────────────────────────────
 module purge
-module load anaconda3_gpu
+module load python/anaconda3/2.10.0
 
 conda activate exp_pytorch
 
