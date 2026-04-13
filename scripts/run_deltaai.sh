@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=cdc_compress
+#SBATCH --job-name=cdc-epsilon-eval
 #SBATCH --account=bfod-dtai-gh
 #SBATCH --partition=ghx4
 #SBATCH --nodes=1
@@ -7,36 +7,67 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=02:00:00
-#SBATCH --output=logs/%j.out
-#SBATCH --error=logs/%j.err
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/epsilon_eval_%j.out
+#SBATCH --error=logs/epsilon_eval_%j.err
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=yyang48@illinois.edu
 
-# ── Environment ───────────────────────────────────────────────────────────────
-module purge
-module load python/anaconda3/2.10.0
+set -e
 
-conda activate exp_pytorch
+# ── Environment ───────────────────────────────────────────────────────────────
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+pip install ema-pytorch lpips --quiet
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE=/projects/bfod/yyang48/cdc-deltaai
-DATA_DIR=$BASE/data/100_0005
-CKPT_DIR=$BASE/weights
-OUT_DIR=$BASE/output/${SLURM_JOB_ID}
+CKPT_DIR=$BASE/weights/epsilon_param
+IMG_DIR=$BASE/data/imgs
+OUT_BASE=$BASE/output/epsilon_eval_${SLURM_JOB_ID}
+CODE_DIR=/u/yyang48/code/epsilonparam
 
-mkdir -p $OUT_DIR logs
+mkdir -p $OUT_BASE logs
 
-# ── Run ───────────────────────────────────────────────────────────────────────
-cd /u/yyang48/code/epsilonparam
+echo "Starting CDC epsilon-param compression evaluation..."
+echo "Images:   $IMG_DIR"
+echo "Output:   $OUT_BASE"
 
-python test_epsilonparam.py \
-    --ckpt           $CKPT_DIR/epsilon_lpips0.9.pt \
-    --img_dir        $DATA_DIR \
-    --out_dir        $OUT_DIR \
-    --gamma          0.8 \
-    --n_denoise_step 200 \
-    --lpips_weight   0.9 \
-    --device         0
+cd $CODE_DIR
 
-echo "Done. Output at: $OUT_DIR"
+# ── Loop over all epsilon_param checkpoints ────────────────────────────────────
+for CKPT in \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.0128-vbrFalse-noise-linear-aux-1.0_0_ckpt.pt" \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.0256-vbrFalse-noise-linear-aux-1.0_0_ckpt.pt" \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.0512-vbrFalse-noise-linear-aux-1.0_0_ckpt.pt" \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.1024-vbrFalse-noise-linear-aux0.9lpips_0.pt" \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.2048-vbrFalse-noise-linear-aux0.9lpips_0.pt" \
+    "$CKPT_DIR/big-l1-vimeo-d64-t20000-b0.3072-vbrFalse-noise-linear-aux0.9lpips_0.pt"
+do
+    BNAME=$(basename "$CKPT" .pt)
+    BRATE=$(echo "$BNAME" | grep -oP 'b[0-9]+\.[0-9]+')
+
+    if echo "$BNAME" | grep -q "lpips"; then
+        LPIPS=0.9
+    else
+        LPIPS=0.0
+    fi
+
+    OUT_DIR=$OUT_BASE/$BRATE
+    mkdir -p $OUT_DIR
+
+    echo ""
+    echo "=== Running: $BRATE (lpips_weight=$LPIPS) ==="
+    python test_epsilonparam.py \
+        --ckpt           "$CKPT" \
+        --img_dir        "$IMG_DIR" \
+        --out_dir        "$OUT_DIR" \
+        --gamma          0.8 \
+        --n_denoise_step 200 \
+        --lpips_weight   $LPIPS \
+        --device         0
+
+done
+
+echo ""
+echo "Done. All results in: $OUT_BASE"

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=cdc-evaluate
+#SBATCH --job-name=cdc-xparam-eval
 #SBATCH --account=bfod-dtai-gh
 #SBATCH --partition=ghx4
 #SBATCH --nodes=1
@@ -8,7 +8,7 @@
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1
 #SBATCH --time=04:00:00
-#SBATCH --output=logs/eval_%j.log
+#SBATCH --output=logs/xparam_eval_%j.log
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=yyang48@illinois.edu
 
@@ -16,34 +16,60 @@ set -e
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE=/projects/bfod/yyang48/cdc-deltaai
-CKPT=$BASE/weights/xparam_ema.pt
+CKPT_DIR=$BASE/weights/x_param
 IMG_DIR=$BASE/data/imgs
-OUT_DIR=$BASE/output/evaluation
+OUT_BASE=$BASE/output/xparam_eval_${SLURM_JOB_ID}
 CODE_DIR=/u/yyang48/code/xparam
 
 # ── Environment ───────────────────────────────────────────────────────────────
-module load python/anaconda3/2.10.0
-conda activate exp_pytorch
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+pip install ema-pytorch lpips --quiet
 
-mkdir -p $OUT_DIR
+mkdir -p $OUT_BASE
 mkdir -p $CODE_DIR/logs
 
-# ── Run evaluation on drone images ────────────────────────────────────────────
-echo "Starting CDC compression evaluation..."
-echo "Images:     $IMG_DIR"
-echo "Output:     $OUT_DIR"
-echo "Checkpoint: $CKPT"
+echo "Starting CDC x-param compression evaluation..."
+echo "Images:   $IMG_DIR"
+echo "Output:   $OUT_BASE"
 
 cd $CODE_DIR
 
-python evaluate_compression.py \
-    --ckpt           $CKPT \
-    --img_dir        $IMG_DIR \
-    --out_dir        $OUT_DIR \
-    --n_images       100 \
-    --gamma          0.8 \
-    --n_denoise_step 65 \
-    --device         0 \
-    --lpips_weight   0.9
+# ── Loop over all x_param checkpoints ─────────────────────────────────────────
+for CKPT in \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.0032-x-cosine-01-float32-aux0.0_2.pt" \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.0064-x-cosine-01-float32-aux0.0_2.pt" \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.0128-x-cosine-01-float32-aux0.0_2.pt" \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.0512-x-cosine-01-float32-aux0.9lpips_2.pt" \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.1024-x-cosine-01-float32-aux0.9lpips_2.pt" \
+    "$CKPT_DIR/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt"
+do
+    # Extract bitrate label from filename (e.g. b0.0512)
+    BNAME=$(basename "$CKPT" .pt)
+    BRATE=$(echo "$BNAME" | grep -oP 'b[0-9]+\.[0-9]+')
 
-echo "Done. Results in: $OUT_DIR"
+    # Set lpips_weight based on checkpoint type
+    if echo "$BNAME" | grep -q "lpips"; then
+        LPIPS=0.9
+    else
+        LPIPS=0.0
+    fi
+
+    OUT_DIR=$OUT_BASE/$BRATE
+    mkdir -p $OUT_DIR
+
+    echo ""
+    echo "=== Running: $BRATE (lpips_weight=$LPIPS) ==="
+    python evaluate_compression.py \
+        --ckpt           "$CKPT" \
+        --img_dir        "$IMG_DIR" \
+        --out_dir        "$OUT_DIR" \
+        --gamma          0.8 \
+        --n_denoise_step 65 \
+        --device         0 \
+        --lpips_weight   $LPIPS \
+        --n_images       363
+done
+
+echo ""
+echo "Done. All results in: $OUT_BASE"
