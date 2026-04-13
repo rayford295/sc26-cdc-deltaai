@@ -72,7 +72,7 @@ do
         --n_denoise_step 65 \
         --device         0 \
         --lpips_weight   $LPIPS \
-        --n_images       363
+        --n_images       100
 done
 
 echo ""
