@@ -32,7 +32,7 @@ from modules.unet import Unet
 from modules.compress_modules import ResnetCompressor
 from ema_pytorch import EMA
 
-# ── Args ──────────────────────────────────────────────────────────────────────
+# ── Args ───────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
 parser.add_argument("--ckpt",          type=str,   required=True)
 parser.add_argument("--img_dir",       type=str,   default="../imgs")
@@ -103,7 +103,7 @@ def main():
     out_dir = pathlib.Path(config.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Collect images ────────────────────────────────────────────────────────
+    # ── Collect images ─────────────────────────────────────────────────────────
     all_imgs = sorted([
         f for f in os.listdir(config.img_dir)
         if f.lower().endswith((".jpg", ".jpeg", ".png"))
@@ -127,8 +127,13 @@ def main():
         img_path = os.path.join(config.img_dir, img_name)
         orig_bytes = os.path.getsize(img_path)
 
-        # Load and compress
+        # Load image and crop to multiples of 64 so the compressor and
+        # hyperprior stay aligned through the downsample / upsample stack.
         tensor = torchvision.io.read_image(img_path).unsqueeze(0).float().to(rank) / 255.0
+        H, W = tensor.shape[-2], tensor.shape[-1]
+        H64 = (H // 64) * 64
+        W64 = (W // 64) * 64
+        tensor = tensor[:, :, :H64, :W64]
         H, W = tensor.shape[-2], tensor.shape[-1]
 
         t0 = time.time()
