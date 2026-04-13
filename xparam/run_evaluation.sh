@@ -23,6 +23,7 @@ CODE_DIR=/u/yyang48/code/xparam
 
 # ── Environment ───────────────────────────────────────────────────────────────
 module purge
+module load gcc
 module load python/miniforge3_pytorch/2.10.0
 conda activate base
 pip install ema-pytorch lpips --quiet
