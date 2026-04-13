@@ -47,6 +47,23 @@ Remaining work:
 - Run the same evaluation on H100 once the partition name and access are confirmed.
 - Compare GH200 and H100 runtime and output statistics side by side.
 
+## GPU Partition Summary
+
+The currently visible GPU-backed partitions from `sinfo -o "%P %G %D %N"` are:
+
+- `full` — NVIDIA GH200 120GB, 4 GPUs per node
+- `ghx4` — NVIDIA GH200 120GB, 4 GPUs per node
+- `ghx4-interactive` — NVIDIA GH200 120GB, 4 GPUs per node
+- `test` — no GPU nodes reported
+
+Practical interpretation:
+- `ghx4` is the confirmed batch partition currently used for the GH200 evaluation jobs.
+- `ghx4-interactive` is the confirmed interactive partition currently used for debugging and single-image validation runs.
+- `full` also reports GH200 nodes, but the current workflow has been validated on `ghx4` and `ghx4-interactive`.
+- No H100-backed partition is currently visible in `sinfo`, so an H100 run will require either a different partition name or additional access confirmation.
+
+In other words, the currently confirmed and usable GPU target in this environment is GH200.
+
 ## Repository Structure
 
 ```
@@ -208,6 +225,7 @@ srun --account=bfod-dtai-gh --partition=ghx4-interactive \
 |-----------|-----|-------|
 | `ghx4` | 4x NVIDIA GH200 120GB | Current confirmed batch partition |
 | `ghx4-interactive` | 4x NVIDIA GH200 120GB | Current confirmed interactive partition |
+| `full` | 4x NVIDIA GH200 120GB | Visible in `sinfo`, but not the current validated workflow target |
 | `gpuH100x8` | 8x H100 | Planned target once partition and access are confirmed |
 
 ---
