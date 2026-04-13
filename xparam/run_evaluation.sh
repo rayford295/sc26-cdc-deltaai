@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=cdc-evaluate
-#SBATCH --account=CIV25002
+#SBATCH --account=CIV250023
 #SBATCH --partition=gpuA100x4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -15,7 +15,7 @@
 set -e
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-BASE=/scratch/CIV25002/$USER/cdc-deltaai
+BASE=/scratch/CIV250023/$USER/cdc-deltaai
 CKPT=$BASE/weights/xparam_ema.pt
 IMG_DIR=$BASE/data/imgs
 OUT_DIR=$BASE/output/evaluation

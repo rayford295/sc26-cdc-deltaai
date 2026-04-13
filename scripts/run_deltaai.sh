@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=cdc_compress
-#SBATCH --account=CIV25002
+#SBATCH --account=CIV250023
 #SBATCH --partition=gpuA100x4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -19,9 +19,9 @@ conda activate exp_pytorch
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 REPO_DIR=$SLURM_SUBMIT_DIR
-DATA_DIR=/scratch/CIV25002/$USER/cdc-deltaai/data/100_0005
-CKPT_DIR=/scratch/CIV25002/$USER/cdc-deltaai/weights
-OUT_DIR=/scratch/CIV25002/$USER/cdc-deltaai/output/${SLURM_JOB_ID}
+DATA_DIR=/scratch/CIV250023/$USER/cdc-deltaai/data/100_0005
+CKPT_DIR=/scratch/CIV250023/$USER/cdc-deltaai/weights
+OUT_DIR=/scratch/CIV250023/$USER/cdc-deltaai/output/${SLURM_JOB_ID}
 
 mkdir -p $OUT_DIR logs
 
