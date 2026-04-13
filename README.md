@@ -12,8 +12,8 @@ The current evaluation task is to:
 2. Report the overall compression rate from the evaluation output.
 3. Compare the total size of the original images and the reconstructed images.
 4. Run the same evaluation workflow on both GPU targets when available:
-   - GH200
-   - H100
+- GH200
+- H100
 
 For each run, collect and summarize the following outputs:
 - `compression_report.txt`
@@ -24,10 +24,28 @@ For each run, collect and summarize the following outputs:
 - total reconstructed image size
 - file size ratio between original and reconstructed images
 
-Current execution status:
-- GH200 workflow is running on the `ghx4` partition.
-- H100 execution is still pending partition or access confirmation.
-- The x-param evaluation flow has been debugged on DeltaAI and now runs successfully for at least a validated single-image test.
+## Current Status
+
+The DeltaAI x-parameterization workflow has been debugged and is now running successfully on GH200.
+
+Validated progress so far:
+- The DeltaAI environment issues were resolved, including Python user site-packages visibility and missing runtime dependencies.
+- The x-param evaluation script was updated to crop each input image to multiples of 64 so the compressor and hyperprior remain shape-aligned during inference.
+- A single-image GH200 validation run completed successfully and produced both `compression_report.txt` and `compression_results.csv`.
+- The full GH200 evaluation job is now running on the `ghx4` partition and has already processed multiple drone images successfully.
+
+Observed GH200 single-image validation result:
+- Image: `100_0005_0001.JPG`
+- Average BPP: `0.3459`
+- Overall compression ratio vs uncompressed RGB: `69.38x`
+- Original JPEG size: `8.1 MB`
+- Reconstructed PNG size: `21.7 MB`
+- Runtime: about `143.6s` for one image with `65` denoising steps
+
+Remaining work:
+- Complete the full GH200 run and summarize the final 100-image results.
+- Run the same evaluation on H100 once the partition name and access are confirmed.
+- Compare GH200 and H100 runtime and output statistics side by side.
 
 ## Repository Structure
 
@@ -177,8 +195,8 @@ The output folder will contain:
 ### Step 9: Interactive session (for debugging)
 
 ```bash
-srun --account=bfod-dtai-gh --partition=gpuA100x4 \
-     --nodes=1 --ntasks=1 --gres=gpu:1 --mem=16G \
+srun --account=bfod-dtai-gh --partition=ghx4-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:1 --mem=32G \
      --time=01:00:00 --pty bash
 ```
 
@@ -186,13 +204,11 @@ srun --account=bfod-dtai-gh --partition=gpuA100x4 \
 
 ## DeltaAI GPU Partitions
 
-| Partition | GPU | Recommended for |
-|-----------|-----|-----------------|
-| `gpuA100x4` | 4x A100 40GB | General inference (use this) |
-| `gpuA100x8` | 8x A100 80GB | Large memory jobs |
-| `gpuH100x8` | 8x H100 | Largest jobs |
-
-For 100-image inference, `gpuA100x4` with `--gres=gpu:1` is sufficient.
+| Partition | GPU | Notes |
+|-----------|-----|-------|
+| `ghx4` | 4x NVIDIA GH200 120GB | Current confirmed batch partition |
+| `ghx4-interactive` | 4x NVIDIA GH200 120GB | Current confirmed interactive partition |
+| `gpuH100x8` | 8x H100 | Planned target once partition and access are confirmed |
 
 ---
 
