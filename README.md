@@ -30,7 +30,7 @@ HuggingFace: [rhyang/CDC_params](https://huggingface.co/rhyang/CDC_params)
 ### Step 1: Log in to DeltaAI
 
 ```bash
-ssh YOUR_NETID@login.deltaai.ncsa.illinois.edu
+ssh YOUR_NETID@dtai-login.delta.ncsa.illinois.edu
 ```
 
 Use DUO two-factor authentication when prompted.
@@ -67,7 +67,7 @@ From your **local machine**:
 ```bash
 # Transfer drone images (e.g., 100_0005/ dataset)
 rsync -avz /path/to/your/images/ \
-  YOUR_NETID@login.deltaai.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/data/imgs/
+  YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/data/imgs/
 ```
 
 ---
@@ -138,7 +138,7 @@ From your **local machine**:
 
 ```bash
 rsync -avz \
-  YOUR_NETID@login.deltaai.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/output/ \
+  YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/output/ \
   ./output/
 ```
 

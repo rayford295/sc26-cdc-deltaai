@@ -7,12 +7,12 @@ Upload them manually to DeltaAI before running jobs.
 
 ```bash
 # From your local machine (Mac terminal)
-scp -r /path/to/100_0005 YOUR_NETID@login.deltaai.ncsa.illinois.edu:/projects/YOUR_PROJECT/data/
+scp -r /path/to/100_0005 YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/projects/YOUR_PROJECT/data/
 ```
 
 Or use rsync (faster for large files, resumable):
 ```bash
-rsync -avP /path/to/100_0005 YOUR_NETID@login.deltaai.ncsa.illinois.edu:/projects/YOUR_PROJECT/data/
+rsync -avP /path/to/100_0005 YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/projects/YOUR_PROJECT/data/
 ```
 
 ## 2. Download model weights on DeltaAI
