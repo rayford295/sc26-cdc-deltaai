@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=cdc-evaluate
-#SBATCH --account=CIV250023
+#SBATCH --account=bfod-dtai-gh
 #SBATCH --partition=ghx4
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -15,11 +15,11 @@
 set -e
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-BASE=/scratch/CIV250023/$USER/cdc-deltaai
+BASE=/projects/bfod/yyang48/cdc-deltaai
 CKPT=$BASE/weights/xparam_ema.pt
 IMG_DIR=$BASE/data/imgs
 OUT_DIR=$BASE/output/evaluation
-CODE_DIR=$BASE/code/xparam
+CODE_DIR=/u/yyang48/code/xparam
 
 # ── Environment ───────────────────────────────────────────────────────────────
 module load anaconda3_gpu

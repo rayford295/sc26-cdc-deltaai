@@ -30,7 +30,7 @@ HuggingFace: [rhyang/CDC_params](https://huggingface.co/rhyang/CDC_params)
 ### Step 1: Log in to DeltaAI
 
 ```bash
-ssh YOUR_NETID@dtai-login.delta.ncsa.illinois.edu
+ssh yyang48@dtai-login.delta.ncsa.illinois.edu
 ```
 
 Use DUO two-factor authentication when prompted.
@@ -45,8 +45,8 @@ Use DUO two-factor authentication when prompted.
 | `/scratch/<allocation>/$USER/` | Large data, weights, outputs (faster I/O) |
 
 ```bash
-mkdir -p /scratch/<your_allocation>/$USER/cdc-deltaai
-cd /scratch/<your_allocation>/$USER/cdc-deltaai
+mkdir -p /projects/bfod/$USER/cdc-deltaai
+cd /projects/bfod/$USER/cdc-deltaai
 ```
 
 ---
@@ -67,7 +67,7 @@ From your **local machine**:
 ```bash
 # Transfer drone images (e.g., 100_0005/ dataset)
 rsync -avz /path/to/your/images/ \
-  YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/data/imgs/
+  yyang48@dtai-login.delta.ncsa.illinois.edu:/projects/bfod/$USER/cdc-deltaai/data/imgs/
 ```
 
 ---
@@ -76,7 +76,7 @@ rsync -avz /path/to/your/images/ \
 
 ```bash
 # On DeltaAI
-cd /scratch/<your_allocation>/$USER/cdc-deltaai
+cd /projects/bfod/$USER/cdc-deltaai
 mkdir -p weights
 
 module load anaconda3
@@ -116,7 +116,7 @@ conda activate exp_pytorch
 Edit `xparam/run_evaluation.sh` to fill in your allocation ID, email, and checkpoint path, then:
 
 ```bash
-cd /scratch/<your_allocation>/$USER/cdc-deltaai/code
+cd /projects/bfod/$USER/cdc-deltaai/code
 mkdir -p xparam/logs output/evaluation
 
 sbatch xparam/run_evaluation.sh
@@ -138,7 +138,7 @@ From your **local machine**:
 
 ```bash
 rsync -avz \
-  YOUR_NETID@dtai-login.delta.ncsa.illinois.edu:/scratch/<your_allocation>/$USER/cdc-deltaai/output/ \
+  yyang48@dtai-login.delta.ncsa.illinois.edu:/projects/bfod/$USER/cdc-deltaai/output/ \
   ./output/
 ```
 
@@ -152,7 +152,7 @@ The output folder will contain:
 ### Step 9: Interactive session (for debugging)
 
 ```bash
-srun --account=<your_allocation> --partition=gpuA100x4 \
+srun --account=bfod-dtai-gh --partition=gpuA100x4 \
      --nodes=1 --ntasks=1 --gres=gpu:1 --mem=16G \
      --time=01:00:00 --pty bash
 ```
