@@ -43,6 +43,8 @@ parser.add_argument("--device",        type=int,   default=0)
 parser.add_argument("--lpips_weight",  type=float, required=True)
 parser.add_argument("--n_images",      type=int,   default=100,
                     help="Number of images to process (default: 100)")
+parser.add_argument("--start_index",   type=int,   default=0,
+                    help="Zero-based image start index within the sorted image list")
 config = parser.parse_args()
 
 UNCOMPRESSED_BPP = 24.0  # RGB, 8 bits per channel
@@ -108,8 +110,8 @@ def main():
         f for f in os.listdir(config.img_dir)
         if f.lower().endswith((".jpg", ".jpeg", ".png"))
     ])
-    selected = all_imgs[:config.n_images]
-    print(f"Found {len(all_imgs)} images, processing first {len(selected)}.")
+    selected = all_imgs[config.start_index:config.start_index + config.n_images]
+    print(f"Found {len(all_imgs)} images, processing {len(selected)} starting from index {config.start_index}.")
     print(f"Output directory: {out_dir}\n")
 
     # ── Load model ────────────────────────────────────────────────────────────
@@ -191,6 +193,7 @@ def main():
         "  CDC COMPRESSION EVALUATION REPORT",
         "=" * 65,
         f"  Images processed     : {len(results)}",
+        f"  Start index          : {config.start_index}",
         f"  Model checkpoint     : {config.ckpt}",
         f"  LPIPS weight         : {config.lpips_weight}",
         f"  Denoise steps        : {config.n_denoise_step}",
@@ -211,13 +214,11 @@ def main():
     report_text = "\n".join(report_lines)
     print("\n" + report_text)
 
-    # ── Save report ───────────────────────────────────────────────────────────
     report_path = out_dir / "compression_report.txt"
     with open(report_path, "w") as f:
         f.write(report_text + "\n")
     print(f"\nReport saved to: {report_path}")
 
-    # ── Save CSV ──────────────────────────────────────────────────────────────
     csv_path = out_dir / "compression_results.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=results[0].keys())
