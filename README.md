@@ -76,13 +76,17 @@ In other words, the currently confirmed and usable GPU target in this environmen
 
 ```
 .
-├── epsilonparam/                   # epsilon-parameterization model
-├── xparam/                         # x-parameterization model
-│   ├── evaluate_compression.py     # evaluation script (compression rate + size report)
-│   ├── run_evaluation.sh           # Slurm job script for DeltaAI (100-image sweep)
-│   └── run_b02048_resume.sh        # targeted resume script for unfinished b0.2048 images
-├── imgs/                           # sample Kodak test images
-└── environment.yml                 # conda environment
+├── epsilonparam/                      # epsilon-parameterization model
+├── xparam/                            # x-parameterization model
+│   ├── evaluate_compression.py        # evaluation script (compression rate + size report)
+│   ├── profile_reconstruction.py      # profiling script (timing breakdown + PSNR/SSIM + GPU memory)
+│   ├── sweep_steps.py                 # parameter sweep over denoising steps and precision
+│   ├── plot_results.py                # generates speed/quality trade-off plots from sweep CSV
+│   ├── run_evaluation.sh              # SLURM job: 100-image compression evaluation
+│   ├── run_b02048_resume.sh           # SLURM job: targeted resume for unfinished b0.2048 images
+│   └── run_profiling_sweep.sh         # SLURM job: full profiling + step sweep + plotting
+├── imgs/                              # sample Kodak test images
+└── environment.yml                    # conda environment
 ```
 
 ## Model Weights
@@ -263,6 +267,223 @@ python xparam/evaluate_compression.py \
   --start_index 0 \
   --lpips_weight 0.9
 ```
+
+---
+
+---
+
+## Reconstruction Profiling and Optimization (Yifan's Task)
+
+### Goal
+
+The reconstruction (decoding / diffusion sampling) pipeline currently takes **~143 seconds per image** on GH200 with 65 denoising steps. The goal is to:
+
+1. **Profile** the pipeline to understand where time is spent (model load vs. inference vs. post-processing).
+2. **Sweep parameters** — especially the number of denoising steps — to map the speed / quality trade-off.
+3. **Benchmark fp16 vs. fp32** to see if mixed precision saves time without hurting quality.
+4. **Identify the optimal configuration** (fewest steps where PSNR/SSIM plateau).
+
+### New Scripts
+
+| Script | What it does |
+|--------|-------------|
+| `profile_reconstruction.py` | Profiles one configuration in detail: split timing (load / infer / postproc), GPU memory, PSNR, SSIM |
+| `sweep_steps.py` | Sweeps multiple step counts in one job — model loaded once, reused for all configs |
+| `plot_results.py` | Reads `sweep_results.csv` and saves 5 PNG plots |
+| `run_profiling_sweep.sh` | SLURM job that runs all three scripts in sequence |
+
+### Step-by-Step Instructions
+
+#### Step 1 — Install extra dependencies
+
+`scikit-image` (for PSNR/SSIM) and `matplotlib` (for plots) are not in `environment.yml`.
+Install them once after activating the conda environment:
+
+```bash
+module load anaconda3
+conda activate exp_pytorch
+pip install scikit-image matplotlib --quiet
+```
+
+> **Note:** Do this in an interactive session or add it to the job script.
+> The `run_profiling_sweep.sh` script already includes this pip install step.
+
+---
+
+#### Step 2 — Edit paths in the SLURM script
+
+Open `xparam/run_profiling_sweep.sh` and update the path variables at the top:
+
+```bash
+REPO_DIR="/projects/bfod/$USER/cdc-deltaai/code"   # where you cloned the repo
+IMG_DIR="/projects/bfod/$USER/cdc-deltaai/data/imgs"  # drone images directory
+WEIGHT_DIR="/projects/bfod/$USER/cdc-deltaai/weights" # downloaded model weights
+
+# Pick whichever checkpoint you want to profile (b0.2048 recommended as the largest)
+CKPT="${WEIGHT_DIR}/xparam/b0.2048.pt"
+LPIPS_WEIGHT=0.9
+```
+
+> **Note:** The script uses `$USER` automatically, so only the base paths need editing.
+
+---
+
+#### Step 3 — Create the log directory
+
+```bash
+mkdir -p xparam/logs
+```
+
+SLURM writes stdout/stderr to `xparam/logs/profiling_<jobid>.log`.
+
+---
+
+#### Step 4 — Submit the job
+
+```bash
+cd /projects/bfod/$USER/cdc-deltaai/code
+sbatch xparam/run_profiling_sweep.sh
+```
+
+Monitor progress:
+
+```bash
+squeue -u $USER                                   # check if the job is running
+tail -f xparam/logs/profiling_<jobid>.log         # live log output
+```
+
+Estimated wall time: **~2–3 hours** for the full sweep (7 step counts × 2 precisions × 5 images each).
+
+---
+
+#### Step 5 — Run a quick sanity check first (optional but recommended)
+
+Before submitting the full sweep, validate that the scripts work with an interactive session:
+
+```bash
+# Start an interactive GPU session
+srun --account=bfod-dtai-gh --partition=ghx4-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:1 --mem=32G \
+     --time=00:30:00 --pty bash
+
+module load anaconda3
+conda activate exp_pytorch
+cd /projects/bfod/$USER/cdc-deltaai/code/xparam
+
+# Quick profile: 1 image, 20 steps
+python profile_reconstruction.py \
+    --ckpt /projects/bfod/$USER/cdc-deltaai/weights/xparam/b0.2048.pt \
+    --img_dir /projects/bfod/$USER/cdc-deltaai/data/imgs \
+    --out_dir /projects/bfod/$USER/cdc-deltaai/output/test_profile \
+    --n_denoise_step 20 \
+    --lpips_weight 0.9 \
+    --n_images 1
+```
+
+If this completes and prints a timing report, the full sweep is safe to submit.
+
+---
+
+#### Step 6 — Retrieve results
+
+From your **local machine**:
+
+```bash
+rsync -avz \
+  yyang48@dtai-login.delta.ncsa.illinois.edu:/projects/bfod/$USER/cdc-deltaai/output/ \
+  ./output/
+```
+
+Output structure:
+
+```
+output/
+├── profiling/
+│   ├── baseline_65steps_fp32/
+│   │   ├── profile_report.txt      # timing breakdown summary
+│   │   └── profile_results.csv     # per-image timing + PSNR + SSIM + memory
+│   └── baseline_65steps_fp16/
+│       ├── profile_report.txt
+│       └── profile_results.csv
+├── sweep/
+│   ├── steps5_fp32/                # reconstructed PNGs for each config
+│   ├── steps10_fp32/ ...
+│   ├── sweep_results.csv           # per-image data for all configs (input to plot_results.py)
+│   └── sweep_summary.csv           # one-row-per-config aggregated stats
+└── plots/
+    ├── plot_time_vs_steps.png      # inference time vs denoising steps
+    ├── plot_psnr_vs_steps.png      # PSNR vs denoising steps
+    ├── plot_ssim_vs_steps.png      # SSIM vs denoising steps
+    ├── plot_quality_vs_speed.png   # PSNR vs time scatter (key trade-off chart)
+    └── plot_memory_vs_steps.png    # GPU memory vs denoising steps
+```
+
+---
+
+#### Step 7 — Generate plots locally (if preferred)
+
+If you want to regenerate or tweak the plots on your local machine after retrieving the CSV:
+
+```bash
+cd xparam
+python plot_results.py \
+    --sweep_csv ../output/sweep/sweep_results.csv \
+    --out_dir   ../output/plots
+```
+
+Requires: `pip install matplotlib pandas scikit-image`
+
+---
+
+### Important Notes and Known Gotchas
+
+#### Timing accuracy
+- All inference timing uses **CUDA Events** (`torch.cuda.Event`), not `time.time()`.
+  CUDA operations are asynchronous — `time.time()` returns before GPU kernels finish
+  and systematically under-reports latency. Always use CUDA Events for GPU timing.
+
+#### Image cropping
+- Input images are cropped to **multiples of 64** before inference (same as `evaluate_compression.py`).
+  This is required by the compressor/hyperprior downsampling stack. PSNR/SSIM are computed
+  against the cropped original, not the full image.
+
+#### Model is loaded once in the sweep
+- `sweep_steps.py` loads the model **once** and reuses it across all step configurations.
+  This correctly isolates inference time from the one-time loading cost (~10–30s).
+  Do not add model reloading between step counts — it would distort the timing.
+
+#### fp16 and numerical stability
+- fp16 (`--fp16` / `--test_fp16`) uses `torch.cuda.amp.autocast`. On GH200, this may
+  give minimal speedup since GH200 excels at fp32. If outputs look visually degraded at
+  very low step counts with fp16, that is expected — fewer steps + reduced precision
+  compound noise accumulation errors.
+
+#### PSNR / SSIM interpretation
+- PSNR > 30 dB and SSIM > 0.90 are generally considered good perceptual quality.
+- At very low step counts (≤ 10), expect PSNR to drop noticeably. The elbow point
+  (where quality plateaus but time keeps improving) is typically around **20–30 steps**.
+
+#### Walltime budget
+- Each image at 65 steps takes ~143s. A 7-config × 2-precision × 5-image sweep is
+  roughly 7 × 2 × 5 × ~80s average = **~93 minutes**. The job is set to 4 hours
+  with `--time=04:00:00` to be safe, but monitor and cancel early if done.
+
+#### Output CSV column reference
+
+`profile_results.csv` and `sweep_results.csv` share these key columns:
+
+| Column | Description |
+|--------|-------------|
+| `n_denoise_step` | Number of diffusion denoising steps |
+| `precision` | `fp32` or `fp16` |
+| `inference_sec` | GPU-accurate inference time (CUDA Events) |
+| `postproc_sec` | Post-processing time (clamp + PNG save) |
+| `model_load_sec` | One-time model load time (same for all rows in profile CSV) |
+| `peak_gpu_mem_mb` | Peak GPU memory during inference |
+| `psnr_db` | PSNR vs cropped original (dB, higher = better) |
+| `ssim` | SSIM vs cropped original (0–1, higher = better) |
+| `bpp` | Bits per pixel (compression bitrate) |
+| `compression_ratio` | 24 / bpp (vs uncompressed RGB) |
 
 ---
 
