@@ -288,9 +288,9 @@ The reconstruction (decoding / diffusion sampling) pipeline currently takes **~1
 | Script | What it does |
 |--------|-------------|
 | `profile_reconstruction.py` | Profiles one configuration in detail: split timing (load / infer / postproc), GPU memory, PSNR, SSIM |
-| `sweep_steps.py` | Sweeps multiple step counts in one job — model loaded once, reused for all configs |
+| `sweep_steps.py` | Sweeps step counts, precision, batch size, and repeats — model loaded once, reused for all configs |
 | `plot_results.py` | Reads `sweep_results.csv` and saves 5 PNG plots |
-| `run_profiling_sweep.sh` | SLURM job that runs all three scripts in sequence |
+| `run_profiling_sweep.sh` | SLURM job that runs profiling, batch pilot, repeated sweep, and plotting |
 
 ### Step-by-Step Instructions
 
@@ -352,7 +352,7 @@ squeue -u $USER                                   # check if the job is running
 tail -f xparam/logs/profiling_<jobid>.log         # live log output
 ```
 
-Estimated wall time: **~2–3 hours** for the full sweep (7 step counts × 2 precisions × 5 images each).
+Estimated wall time: **~5–7 hours** for the full profiling job, including the batch-size pilot and 3 repeated step-sweep runs. The job script requests 8 hours.
 
 ---
 
@@ -406,10 +406,14 @@ output/
 │       ├── profile_report.txt
 │       └── profile_results.csv
 ├── sweep/
-│   ├── steps5_fp32/                # reconstructed PNGs for each config
-│   ├── steps10_fp32/ ...
-│   ├── sweep_results.csv           # per-image data for all configs (input to plot_results.py)
-│   └── sweep_summary.csv           # one-row-per-config aggregated stats
+│   ├── batch_pilot/
+│   │   ├── sweep_results.csv       # batch-size pilot, includes failures if CUDA OOM occurs
+│   │   └── sweep_summary.csv
+│   └── step_sweep/
+│       ├── steps5_fp32_batch1/     # reconstructed PNGs for each config
+│       ├── steps10_fp32_batch1/ ...
+│       ├── sweep_results.csv       # per-image data for all configs (input to plot_results.py)
+│       └── sweep_summary.csv       # one-row-per-config aggregated stats
 └── plots/
     ├── plot_time_vs_steps.png      # inference time vs denoising steps
     ├── plot_psnr_vs_steps.png      # PSNR vs denoising steps
@@ -427,7 +431,7 @@ If you want to regenerate or tweak the plots on your local machine after retriev
 ```bash
 cd xparam
 python plot_results.py \
-    --sweep_csv ../output/sweep/sweep_results.csv \
+    --sweep_csv ../output/sweep/step_sweep/sweep_results.csv \
     --out_dir   ../output/plots
 ```
 
@@ -463,20 +467,31 @@ Requires: `pip install matplotlib pandas scikit-image`
 - At very low step counts (≤ 10), expect PSNR to drop noticeably. The elbow point
   (where quality plateaus but time keeps improving) is typically around **20–30 steps**.
 
+#### Batch-size pilot
+- The drone images are full-resolution 5472 × 3648 JPEGs, cropped to 5440 × 3648.
+  Use `batch_size=1` as the safe baseline. The job script tests batch sizes 1 and 2
+  on a small pilot. Use batch 2 only if it completes without CUDA OOM and improves
+  images/hour.
+
 #### Walltime budget
-- Each image at 65 steps takes ~143s. A 7-config × 2-precision × 5-image sweep is
-  roughly 7 × 2 × 5 × ~80s average = **~93 minutes**. The job is set to 4 hours
-  with `--time=04:00:00` to be safe, but monitor and cancel early if done.
+- Each image at 65 steps takes ~143s. The current job includes baseline profiling,
+  a small batch-size pilot, and a repeated 7-config × 2-precision × 5-image sweep.
+  The job is set to 8 hours with `--time=08:00:00`; monitor and cancel early if done.
 
 #### Output CSV column reference
 
-`profile_results.csv` and `sweep_results.csv` share these key columns:
+The profiling and sweep CSVs include these key columns where applicable:
 
 | Column | Description |
 |--------|-------------|
 | `n_denoise_step` | Number of diffusion denoising steps |
 | `precision` | `fp32` or `fp16` |
+| `repeat` | Repeat index for repeated runs |
+| `batch_size` | Requested inference batch size |
+| `effective_batch_size` | Actual image count in that batch |
 | `inference_sec` | GPU-accurate inference time (CUDA Events) |
+| `batch_inference_sec` | Total inference time for the whole batch |
+| `images_per_hour` | Throughput derived from batch inference time |
 | `postproc_sec` | Post-processing time (clamp + PNG save) |
 | `model_load_sec` | One-time model load time (same for all rows in profile CSV) |
 | `peak_gpu_mem_mb` | Peak GPU memory during inference |

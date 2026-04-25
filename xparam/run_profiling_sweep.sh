@@ -7,9 +7,10 @@
 # What this does:
 #   1. Runs profile_reconstruction.py on 10 images with the baseline config
 #      (65 steps, fp32) to get a detailed timing breakdown.
-#   2. Runs sweep_steps.py across 7 step counts (5, 10, 20, 30, 50, 65, 100)
-#      in both fp32 and fp16 to map the speed/quality trade-off.
-#   3. Runs plot_results.py to generate all five plots from the sweep CSV.
+#   2. Runs a small batch-size pilot to test whether batch=2 is stable.
+#   3. Runs sweep_steps.py across 7 step counts (5, 10, 20, 30, 50, 65, 100)
+#      in both fp32 and fp16 with repeated runs.
+#   4. Runs plot_results.py to generate all five plots from the sweep CSV.
 #
 # Submit with:
 #   sbatch xparam/run_profiling_sweep.sh
@@ -26,7 +27,7 @@
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=xparam/logs/profiling_%j.log
 #SBATCH --error=xparam/logs/profiling_%j.log
 
@@ -46,12 +47,20 @@ WEIGHT_DIR="/projects/bfod/$USER/cdc-deltaai/weights"
 CKPT="${WEIGHT_DIR}/xparam/b0.2048.pt"
 LPIPS_WEIGHT=0.9
 
+# Experiment structure requested for SC26:
+#   - single-image sanity/profile
+#   - realistic batch workload
+#   - repeated runs for averaged results
+FINAL_BATCH_SIZE=1
+REPEATS=3
+
 # Output directories
 PROFILE_OUT="/projects/bfod/$USER/cdc-deltaai/output/profiling"
-SWEEP_OUT="/projects/bfod/$USER/cdc-deltaai/output/sweep"
+BATCH_PILOT_OUT="/projects/bfod/$USER/cdc-deltaai/output/sweep/batch_pilot"
+SWEEP_OUT="/projects/bfod/$USER/cdc-deltaai/output/sweep/step_sweep"
 PLOT_OUT="/projects/bfod/$USER/cdc-deltaai/output/plots"
 
-mkdir -p xparam/logs "${PROFILE_OUT}" "${SWEEP_OUT}" "${PLOT_OUT}"
+mkdir -p xparam/logs "${PROFILE_OUT}" "${BATCH_PILOT_OUT}" "${SWEEP_OUT}" "${PLOT_OUT}"
 
 cd "${REPO_DIR}/xparam"
 
@@ -91,9 +100,25 @@ python profile_reconstruction.py \
     --device 0 \
     --fp16
 
-# ── Step 2: Parameter sweep over step counts ──────────────────────────────────
+# ── Step 2: Batch-size pilot ──────────────────────────────────────────────────
 echo ""
-echo ">>> STEP 2: Sweeping step counts [5 10 20 30 50 65 100] x [fp32, fp16]"
+echo ">>> STEP 2: Batch-size pilot (steps [20 65], batch sizes [1 2], fp32, repeats=2)"
+echo ""
+
+python sweep_steps.py \
+    --ckpt "${CKPT}" \
+    --img_dir "${IMG_DIR}" \
+    --out_dir "${BATCH_PILOT_OUT}" \
+    --lpips_weight "${LPIPS_WEIGHT}" \
+    --n_images 4 \
+    --device 0 \
+    --repeats 2 \
+    --batch_sizes 1 2 \
+    --steps 20 65
+
+# ── Step 3: Parameter sweep over step counts ──────────────────────────────────
+echo ""
+echo ">>> STEP 3: Sweeping step counts [5 10 20 30 50 65 100] x [fp32, fp16], batch=${FINAL_BATCH_SIZE}, repeats=${REPEATS}"
 echo ""
 
 python sweep_steps.py \
@@ -103,12 +128,14 @@ python sweep_steps.py \
     --lpips_weight "${LPIPS_WEIGHT}" \
     --n_images 5 \
     --device 0 \
+    --batch_size "${FINAL_BATCH_SIZE}" \
+    --repeats "${REPEATS}" \
     --test_fp16 \
     --steps 5 10 20 30 50 65 100
 
-# ── Step 3: Generate plots ────────────────────────────────────────────────────
+# ── Step 4: Generate plots ────────────────────────────────────────────────────
 echo ""
-echo ">>> STEP 3: Generating plots"
+echo ">>> STEP 4: Generating plots"
 echo ""
 
 python plot_results.py \
@@ -119,7 +146,8 @@ echo ""
 echo "=========================================="
 echo "  All done. Results saved to:"
 echo "    Profiling : ${PROFILE_OUT}"
-echo "    Sweep     : ${SWEEP_OUT}"
+echo "    Batch pilot: ${BATCH_PILOT_OUT}"
+echo "    Step sweep : ${SWEEP_OUT}"
 echo "    Plots     : ${PLOT_OUT}"
 echo "  $(date)"
 echo "=========================================="

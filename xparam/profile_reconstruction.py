@@ -200,11 +200,14 @@ def main():
         img_path = os.path.join(config.img_dir, img_name)
 
         # Crop to multiples of 64 -- the compressor / hyperprior require this
+        t_data_start = time.perf_counter()
         tensor = torchvision.io.read_image(img_path).unsqueeze(0).float().to(device) / 255.0
         H, W = tensor.shape[-2], tensor.shape[-1]
         H64, W64 = (H // 64) * 64, (W // 64) * 64
         tensor = tensor[:, :, :H64, :W64]
         orig_tensor = tensor.clone()            # save unmodified copy for PSNR/SSIM
+        torch.cuda.synchronize(device)
+        data_load_sec = time.perf_counter() - t_data_start
 
         torch.cuda.reset_peak_memory_stats(device)  # reset before each inference
 
@@ -224,11 +227,14 @@ def main():
         peak_mem_mb = torch.cuda.max_memory_allocated(device) / 1024 ** 2
 
         # ── Phase 3: Post-processing (clamp + rescale + PNG save) ────────────
-        timer.start()
+        # Wall-clock timing is used here because image saving is CPU/filesystem work,
+        # which CUDA Events do not measure correctly.
+        torch.cuda.synchronize(device)
+        t_post_start = time.perf_counter()
         compressed_01 = compressed.clamp(-1, 1) / 2.0 + 0.5   # back to [0, 1]
         out_path = out_dir / (pathlib.Path(img_name).stem + "_recon.png")
         torchvision.utils.save_image(compressed_01.cpu(), str(out_path))
-        postproc_sec = timer.stop()
+        postproc_sec = time.perf_counter() - t_post_start
 
         # ── Quality metrics ───────────────────────────────────────────────────
         psnr_val, ssim_val = compute_psnr_ssim(orig_tensor, compressed_01)
@@ -237,7 +243,7 @@ def main():
         compression_ratio = UNCOMPRESSED_BPP / bpp_val
         orig_bytes        = os.path.getsize(img_path)
         recon_bytes       = os.path.getsize(str(out_path))
-        total_sec         = inference_sec + postproc_sec   # model load excluded
+        total_sec         = data_load_sec + inference_sec + postproc_sec   # model load excluded
 
         results.append({
             "image":             img_name,
@@ -246,6 +252,7 @@ def main():
             "n_denoise_step":    config.n_denoise_step,
             "precision":         precision_label,
             "model_load_sec":    round(model_load_sec, 3),  # same value in every row
+            "data_load_sec":     round(data_load_sec, 3),
             "inference_sec":     round(inference_sec, 3),
             "postproc_sec":      round(postproc_sec, 3),
             "total_sec":         round(total_sec, 3),
@@ -260,6 +267,7 @@ def main():
 
         print(
             f"[{i+1:3d}/{len(selected)}] {img_name:30s} | "
+            f"load {data_load_sec:5.2f}s | "
             f"infer {inference_sec:6.2f}s | "
             f"post {postproc_sec:5.2f}s | "
             f"mem {peak_mem_mb:7.1f} MB | "
@@ -270,6 +278,7 @@ def main():
 
     # ── Aggregate and print summary ───────────────────────────────────────────
     avg_inference = np.mean([r["inference_sec"]    for r in results])
+    avg_data_load = np.mean([r["data_load_sec"]    for r in results])
     avg_postproc  = np.mean([r["postproc_sec"]     for r in results])
     avg_total     = np.mean([r["total_sec"]        for r in results])
     avg_mem       = np.mean([r["peak_gpu_mem_mb"]  for r in results])
@@ -289,9 +298,10 @@ def main():
         "-" * 68,
         "  TIMING BREAKDOWN (per-image averages)",
         f"    Model load time  : {model_load_sec:.2f}s  (one-time cost, not per-image)",
+        f"    Data load/preproc : {avg_data_load:.2f}s",
         f"    Inference time   : {avg_inference:.2f}s  <-- dominant bottleneck",
         f"    Post-processing  : {avg_postproc:.2f}s",
-        f"    Total per image  : {avg_total:.2f}s  (inference + post)",
+        f"    Total per image  : {avg_total:.2f}s  (data load + inference + post)",
         f"    Inference share  : {avg_inference / avg_total * 100:.1f}% of total runtime",
         "-" * 68,
         "  GPU MEMORY",
