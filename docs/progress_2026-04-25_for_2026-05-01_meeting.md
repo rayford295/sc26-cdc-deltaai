@@ -1,6 +1,7 @@
 # SC26 CDC Reconstruction Progress Log
 
 Recorded: 2026-04-25 23:34:18 CDT
+Last updated: 2026-04-25 23:37:44 CDT
 Next meeting: 2026-05-01
 Owner: Yifan Yang
 Scope: Reconstruction / decoding / diffusion experiments on NSF ACCESS DeltaAI
@@ -19,6 +20,102 @@ The latest pushed commits for this work are:
 
 - `1913f5c` Add reconstruction profiling experiment workflow
 - `9ea1303` Fix DeltaAI profiling runtime setup
+- `d6c062f` Record reconstruction progress for May meeting
+
+## Process Timeline
+
+This section records the workflow so the May 1 meeting can focus on what was done during this cycle.
+
+1. The SC26 reconstruction task was separated from Jacob's compression task.
+   Yifan's question is: "How fast can we use the compressed data again?"
+
+2. The local repository was cloned and updated from GitHub.
+   The working repository is:
+
+```bash
+/projects/bfod/$USER/cdc-deltaai/code
+```
+
+3. The original expected path `/projects/bfod/$USER/cdc-deltaai/code` did not exist on DeltaAI.
+   The project folder initially contained only `data`, `logs`, `output`, and `weights`.
+   The repository was then cloned into the missing `code` directory.
+
+4. The latest reconstruction workflow commit was confirmed on DeltaAI:
+
+```text
+1913f5c Add reconstruction profiling experiment workflow
+```
+
+5. The interactive GPU session was started successfully:
+
+```bash
+srun --account=bfod-dtai-gh --partition=ghx4-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:1 --mem=32G \
+     --time=00:30:00 --pty bash
+```
+
+6. The first environment assumption failed because `module load anaconda3` is not available on this DeltaAI system.
+   The correct PyTorch module is:
+
+```bash
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+```
+
+7. The shared `base` environment had CUDA PyTorch but did not include all CDC dependencies.
+   Required packages were installed into the user site:
+
+```bash
+python -m pip install --user scikit-image compressai einops lpips ema-pytorch tqdm matplotlib pandas
+```
+
+8. The shared conda environment did not automatically expose user-site packages.
+   The import path fix is:
+
+```bash
+export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
+```
+
+9. The initial checkpoint path in the README did not match the actual DeltaAI weight directory.
+   The working checkpoint path is:
+
+```bash
+/projects/bfod/$USER/cdc-deltaai/weights/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt
+```
+
+10. The first profiling run hit `RuntimeError: Invalid device argument`.
+    The scripts were patched to select the CUDA device explicitly and pass the integer device index into CUDA memory accounting functions.
+
+11. The environment, dependency path, checkpoint path, and device fix were pushed to GitHub in commit `9ea1303`.
+
+12. After the fix, the single-image reconstruction test completed successfully.
+
+13. The batch-size pilot completed and showed that `batch_size=2` causes CUDA OOM.
+
+14. The full repeated profiling sweep was submitted as SLURM job `2195446`.
+
+## Done vs Pending
+
+Completed in this cycle:
+
+- Local and DeltaAI repository setup.
+- DeltaAI PyTorch environment discovery.
+- CDC dependency installation and import path fix.
+- Correct checkpoint path discovery.
+- GPU memory accounting bug fix in the profiling scripts.
+- Single-image reconstruction sanity test.
+- Batch-size pilot.
+- Batch-size decision for reconstruction: `batch_size=1`.
+- Full profiling sweep submitted to SLURM.
+- Progress recorded and pushed to GitHub.
+
+Still pending:
+
+- Wait for SLURM job `2195446` to finish.
+- Collect final repeated-run averages from `output/sweep/step_sweep/sweep_summary.csv`.
+- Collect final figures from `output/plots`.
+- Determine the sampling-step elbow point for the 2026-05-01 meeting.
+- Prepare the final slide figure format for Jacob to match.
 
 ## DeltaAI Environment Status
 
