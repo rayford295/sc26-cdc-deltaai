@@ -91,18 +91,19 @@ Core metrics for the slide table:
 
 ## What to Highlight
 
-Expected conclusion pattern:
+Updated conclusion pattern after the 2026-04-26 sweep:
 
 - Diffusion inference dominates reconstruction time.
-- Lower denoising steps should reduce time almost directly.
-- The key figure is quality vs speed. Pick the smallest step count where PSNR and SSIM plateau.
-- fp16 is useful only if it improves images/hour without reducing PSNR/SSIM meaningfully.
+- Reducing denoising steps is the strongest speed lever.
+- The measured realistic batch size is `1` for full-resolution reconstruction.
+- The 5-step setting is the best speed result so far and passed the first visual check on image `100_0005_0001`.
+- fp16 reduces memory and improves speed, but fp16 BPP is invalid in the current output, so use fp32 for bitrate and compression-ratio discussion.
 - Model loading should be excluded from per-image throughput once the model is reused.
 
 ## Message to Jacob
 
-Use this message after the batch pilot completes:
+Use this updated message:
 
 ```text
-Jacob, for the shared SC26 experiment format I am using full-resolution drone images cropped to 5440 x 3648. I ran reconstruction with repeated runs and will report sec/image plus images/hour. The safe starting batch size is 1 for full-image reconstruction; I am testing batch size 2 on DeltaAI and will use it only if it is stable and improves throughput. Please use the same reporting format for compression: single-image sanity test, realistic workload batch, repeated runs, averaged results.
+Jacob, for the shared SC26 experiment format I am using full-resolution drone images cropped to 5440 x 3648. I ran reconstruction with repeated runs and will report sec/image plus images/hour. The realistic batch size for full-image reconstruction is 1; batch size 2 caused CUDA OOM on DeltaAI. Please use the same reporting format for compression: single-image sanity test, realistic workload batch, repeated runs, averaged results.
 ```

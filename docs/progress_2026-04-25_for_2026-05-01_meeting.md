@@ -342,7 +342,7 @@ Initial recommendation for the May 1 meeting:
 
 ```text
 For reconstruction speed, 5 denoising steps is the best measured setting so far.
-Use batch_size=1. Use fp16 if the slide focuses on speed and memory. Use fp32 BPP for bitrate/compression-ratio reporting. Before finalizing the recommendation, visually inspect reconstructed images from 5, 10, and 20 steps.
+Use batch_size=1. Use fp16 if the slide focuses on speed and memory. Use fp32 BPP for bitrate/compression-ratio reporting.
 ```
 
 ## Batch Job Record
@@ -410,6 +410,15 @@ Updated 2026-04-26 06:28 CDT:
 /projects/bfod/$USER/cdc-deltaai/output/plots
 ```
 
+Updated 2026-04-26 07:45 CDT:
+
+- A visual comparison example was created from image `100_0005_0001`.
+- The comparison includes original, fp32 reconstructions at 5, 10, 20, 65, and 100 steps, plus fp16 reconstructions at 5, 20, and 65 steps.
+- The visual check looked good: low-step reconstructions did not show obvious artifacts in the reviewed example.
+- Full-resolution visual examples were kept on DeltaAI under `/projects/bfod/$USER/cdc-deltaai/output/visual_examples`.
+- GitHub stores compressed visual examples under `results/2026-04-26-reconstruction/visual_examples_small`.
+- The main visual comparison file for slides is `results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg`.
+
 ## Generated Outputs for May 1 Meeting
 
 The batch job completed and produced these files:
@@ -423,13 +432,13 @@ The batch job completed and produced these files:
 - `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_ssim_vs_steps.png`
 - `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_quality_vs_speed.png`
 - `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_memory_vs_steps.png`
+- `results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg`
 
 ## Next Actions
 
 Before the 2026-05-01 meeting:
 
-- Monitor job `2195446` until completion.
-- If it completes, summarize the elbow point in the quality-speed curve.
-- If it fails, inspect `xparam/logs/profiling_2195446.log` and rerun only the failed step.
 - Prepare one reconstruction slide with time per image, throughput, GPU memory, and quality-speed trade-off.
 - Keep the conclusion focused on reconstruction latency: diffusion inference is the bottleneck, and reducing denoising steps is the primary optimization lever.
+- Use `batch_size=1` as the final realistic workload batch size for full-resolution reconstruction.
+- Use the visual comparison figure to support the low-step recommendation.
