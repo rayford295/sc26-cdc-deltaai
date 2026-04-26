@@ -36,12 +36,13 @@ srun --account=bfod-dtai-gh --partition=ghx4-interactive \
      --nodes=1 --ntasks=1 --gres=gpu:1 --mem=32G \
      --time=00:30:00 --pty bash
 
-module load anaconda3
-conda activate exp_pytorch
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+export PYTHONPATH=$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH
 cd /projects/bfod/$USER/cdc-deltaai/code/xparam
 
 python profile_reconstruction.py \
-    --ckpt /projects/bfod/$USER/cdc-deltaai/weights/xparam/b0.2048.pt \
+    --ckpt /projects/bfod/$USER/cdc-deltaai/weights/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt \
     --img_dir /projects/bfod/$USER/cdc-deltaai/data/imgs \
     --out_dir /projects/bfod/$USER/cdc-deltaai/output/test_profile \
     --n_denoise_step 20 \

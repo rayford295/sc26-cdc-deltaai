@@ -296,13 +296,14 @@ The reconstruction (decoding / diffusion sampling) pipeline currently takes **~1
 
 #### Step 1 — Install extra dependencies
 
-`scikit-image` (for PSNR/SSIM) and `matplotlib` (for plots) are not in `environment.yml`.
-Install them once after activating the conda environment:
+`scikit-image` and the CDC helper libraries are not always available in DeltaAI's
+shared PyTorch environment. Install them once into your user site:
 
 ```bash
-module load anaconda3
-conda activate exp_pytorch
-pip install scikit-image matplotlib --quiet
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+export PYTHONPATH=$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH
+python -m pip install --user scikit-image compressai einops lpips ema-pytorch tqdm matplotlib pandas --quiet
 ```
 
 > **Note:** Do this in an interactive session or add it to the job script.
@@ -320,7 +321,7 @@ IMG_DIR="/projects/bfod/$USER/cdc-deltaai/data/imgs"  # drone images directory
 WEIGHT_DIR="/projects/bfod/$USER/cdc-deltaai/weights" # downloaded model weights
 
 # Pick whichever checkpoint you want to profile (b0.2048 recommended as the largest)
-CKPT="${WEIGHT_DIR}/xparam/b0.2048.pt"
+CKPT="${WEIGHT_DIR}/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt"
 LPIPS_WEIGHT=0.9
 ```
 
@@ -366,13 +367,14 @@ srun --account=bfod-dtai-gh --partition=ghx4-interactive \
      --nodes=1 --ntasks=1 --gres=gpu:1 --mem=32G \
      --time=00:30:00 --pty bash
 
-module load anaconda3
-conda activate exp_pytorch
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+export PYTHONPATH=$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH
 cd /projects/bfod/$USER/cdc-deltaai/code/xparam
 
 # Quick profile: 1 image, 20 steps
 python profile_reconstruction.py \
-    --ckpt /projects/bfod/$USER/cdc-deltaai/weights/xparam/b0.2048.pt \
+    --ckpt /projects/bfod/$USER/cdc-deltaai/weights/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt \
     --img_dir /projects/bfod/$USER/cdc-deltaai/data/imgs \
     --out_dir /projects/bfod/$USER/cdc-deltaai/output/test_profile \
     --n_denoise_step 20 \

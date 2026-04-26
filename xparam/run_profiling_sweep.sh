@@ -32,11 +32,14 @@
 #SBATCH --error=xparam/logs/profiling_%j.log
 
 # ── Environment setup ─────────────────────────────────────────────────────────
-module load anaconda3
-conda activate exp_pytorch
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
 
-# Install skimage and matplotlib if not already present
-pip install scikit-image matplotlib --quiet
+# DeltaAI's shared conda base does not expose user-site packages by default.
+export PYTHONPATH="$HOME/.local/lib/python3.12/site-packages:${PYTHONPATH}"
+
+# Install the CDC-specific dependencies into the user site if they are missing.
+python -m pip install --user scikit-image compressai einops lpips ema-pytorch tqdm matplotlib pandas --quiet
 
 # ── Paths -- edit these to match your DeltaAI setup ──────────────────────────
 REPO_DIR="/projects/bfod/$USER/cdc-deltaai/code"
@@ -44,7 +47,7 @@ IMG_DIR="/projects/bfod/$USER/cdc-deltaai/data/imgs"
 WEIGHT_DIR="/projects/bfod/$USER/cdc-deltaai/weights"
 
 # Checkpoint to use for profiling (choose any one checkpoint for step sweep)
-CKPT="${WEIGHT_DIR}/xparam/b0.2048.pt"
+CKPT="${WEIGHT_DIR}/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt"
 LPIPS_WEIGHT=0.9
 
 # Experiment structure requested for SC26:

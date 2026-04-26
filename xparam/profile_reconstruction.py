@@ -78,8 +78,8 @@ class CudaTimer:
     CUDA Events record timestamps directly on the GPU stream, giving true latency.
     """
 
-    def __init__(self, device):
-        self.device = device
+    def __init__(self, device_index):
+        self.device_index = device_index
         self.start_event = torch.cuda.Event(enable_timing=True)
         self.end_event   = torch.cuda.Event(enable_timing=True)
 
@@ -89,8 +89,21 @@ class CudaTimer:
     def stop(self) -> float:
         """Stop timer, sync GPU, and return elapsed time in seconds."""
         self.end_event.record()
-        torch.cuda.synchronize(self.device)   # block until all GPU work is done
+        torch.cuda.synchronize(self.device_index)   # block until all GPU work is done
         return self.start_event.elapsed_time(self.end_event) / 1000.0  # ms -> s
+
+
+def get_cuda_device(device_index: int):
+    """Select a CUDA device and return both torch.device and the integer index."""
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is not available. Run this script inside a GPU allocation.")
+    visible_devices = torch.cuda.device_count()
+    if device_index < 0 or device_index >= visible_devices:
+        raise RuntimeError(
+            f"Requested CUDA device {device_index}, but PyTorch sees {visible_devices} visible device(s)."
+        )
+    torch.cuda.set_device(device_index)
+    return torch.device("cuda", device_index), device_index
 
 
 # ── Model builder ─────────────────────────────────────────────────────────────
@@ -165,7 +178,7 @@ def compute_psnr_ssim(original: torch.Tensor, reconstructed: torch.Tensor):
 # ── Main profiling loop ───────────────────────────────────────────────────────
 
 def main():
-    device = torch.device(f"cuda:{config.device}")
+    device, device_index = get_cuda_device(config.device)
     out_dir = pathlib.Path(config.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -175,12 +188,12 @@ def main():
     print(f"Output dir : {out_dir}\n")
 
     # ── Phase 1: Model loading (timed once, not per-image) ───────────────────
-    torch.cuda.reset_peak_memory_stats(device)
+    torch.cuda.reset_peak_memory_stats(device_index)
     t_load_start = time.time()
     diffusion = build_and_load_model(config.ckpt, device, config.lpips_weight)
-    torch.cuda.synchronize(device)              # ensure all weight transfers finish
+    torch.cuda.synchronize(device_index)        # ensure all weight transfers finish
     model_load_sec = time.time() - t_load_start
-    mem_after_load_mb = torch.cuda.memory_allocated(device) / 1024 ** 2
+    mem_after_load_mb = torch.cuda.memory_allocated(device_index) / 1024 ** 2
 
     print(f"Model loaded in {model_load_sec:.2f}s  |  GPU memory after load: {mem_after_load_mb:.1f} MB\n")
 
@@ -194,7 +207,7 @@ def main():
           f"(index {config.start_index} to {config.start_index + len(selected) - 1})\n")
 
     results = []
-    timer = CudaTimer(device)
+    timer = CudaTimer(device_index)
 
     for i, img_name in enumerate(selected):
         img_path = os.path.join(config.img_dir, img_name)
@@ -206,10 +219,10 @@ def main():
         H64, W64 = (H // 64) * 64, (W // 64) * 64
         tensor = tensor[:, :, :H64, :W64]
         orig_tensor = tensor.clone()            # save unmodified copy for PSNR/SSIM
-        torch.cuda.synchronize(device)
+        torch.cuda.synchronize(device_index)
         data_load_sec = time.perf_counter() - t_data_start
 
-        torch.cuda.reset_peak_memory_stats(device)  # reset before each inference
+        torch.cuda.reset_peak_memory_stats(device_index)  # reset before each inference
 
         # ── Phase 2: Diffusion inference (the bottleneck) ────────────────────
         timer.start()
@@ -224,12 +237,12 @@ def main():
                     init=torch.randn_like(tensor) * config.gamma,
                 )
         inference_sec = timer.stop()
-        peak_mem_mb = torch.cuda.max_memory_allocated(device) / 1024 ** 2
+        peak_mem_mb = torch.cuda.max_memory_allocated(device_index) / 1024 ** 2
 
         # ── Phase 3: Post-processing (clamp + rescale + PNG save) ────────────
         # Wall-clock timing is used here because image saving is CPU/filesystem work,
         # which CUDA Events do not measure correctly.
-        torch.cuda.synchronize(device)
+        torch.cuda.synchronize(device_index)
         t_post_start = time.perf_counter()
         compressed_01 = compressed.clamp(-1, 1) / 2.0 + 0.5   # back to [0, 1]
         out_path = out_dir / (pathlib.Path(img_name).stem + "_recon.png")

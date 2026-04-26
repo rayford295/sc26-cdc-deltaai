@@ -141,8 +141,8 @@ class CudaTimer:
     causing systematic under-reporting of inference latency.
     """
 
-    def __init__(self, device):
-        self.device = device
+    def __init__(self, device_index):
+        self.device_index = device_index
         self.start_event = torch.cuda.Event(enable_timing=True)
         self.end_event   = torch.cuda.Event(enable_timing=True)
 
@@ -152,8 +152,21 @@ class CudaTimer:
     def stop(self) -> float:
         """Sync GPU and return elapsed seconds."""
         self.end_event.record()
-        torch.cuda.synchronize(self.device)
+        torch.cuda.synchronize(self.device_index)
         return self.start_event.elapsed_time(self.end_event) / 1000.0  # ms -> s
+
+
+def get_cuda_device(device_index):
+    """Select a CUDA device and return both torch.device and the integer index."""
+    if not torch.cuda.is_available():
+        raise RuntimeError("CUDA is not available. Run this script inside a GPU allocation.")
+    visible_devices = torch.cuda.device_count()
+    if device_index < 0 or device_index >= visible_devices:
+        raise RuntimeError(
+            f"Requested CUDA device {device_index}, but PyTorch sees {visible_devices} visible device(s)."
+        )
+    torch.cuda.set_device(device_index)
+    return torch.device("cuda", device_index), device_index
 
 
 # ── Model builder ─────────────────────────────────────────────────────────────
@@ -231,7 +244,7 @@ def failure_row(n_steps, precision_label, batch_size, error_text):
     return row
 
 
-def run_config(diffusion, images, device, n_steps, use_fp16, gamma, out_subdir, batch_size, repeats):
+def run_config(diffusion, images, device, device_index, n_steps, use_fp16, gamma, out_subdir, batch_size, repeats):
     """
     Run inference on pre-loaded CPU images for one configuration.
 
@@ -248,7 +261,7 @@ def run_config(diffusion, images, device, n_steps, use_fp16, gamma, out_subdir, 
     """
     precision_label = "fp16" if use_fp16 else "fp32"
     out_subdir.mkdir(parents=True, exist_ok=True)
-    timer = CudaTimer(device)
+    timer = CudaTimer(device_index)
     results = []
 
     for repeat_idx in range(1, repeats + 1):
@@ -262,7 +275,7 @@ def run_config(diffusion, images, device, n_steps, use_fp16, gamma, out_subdir, 
             batch_names = [item[0] for item in batch_items]
             batch_orig_bytes = [item[3] for item in batch_items]
 
-            torch.cuda.reset_peak_memory_stats(device)
+            torch.cuda.reset_peak_memory_stats(device_index)
 
             # Diffusion inference -- the bottleneck we are characterising.
             timer.start()
@@ -275,11 +288,11 @@ def run_config(diffusion, images, device, n_steps, use_fp16, gamma, out_subdir, 
                         init=torch.randn_like(batch_tensor) * gamma,
                     )
             batch_inference_sec = timer.stop()
-            peak_mem_mb = torch.cuda.max_memory_allocated(device) / 1024 ** 2
+            peak_mem_mb = torch.cuda.max_memory_allocated(device_index) / 1024 ** 2
 
             # Wall-clock timing is used for post-processing because PNG writing
             # and quality metric preparation are CPU/filesystem work.
-            torch.cuda.synchronize(device)
+            torch.cuda.synchronize(device_index)
             t_post_start = time.perf_counter()
             compressed_01 = compressed.clamp(-1, 1) / 2.0 + 0.5
             save_dir = out_subdir / f"repeat{repeat_idx:02d}" if repeats > 1 else out_subdir
@@ -351,7 +364,7 @@ def run_config(diffusion, images, device, n_steps, use_fp16, gamma, out_subdir, 
 # ── Main sweep ────────────────────────────────────────────────────────────────
 
 def main():
-    device = torch.device(f"cuda:{config.device}")
+    device, device_index = get_cuda_device(config.device)
     out_dir = pathlib.Path(config.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -374,7 +387,7 @@ def main():
     print("Loading model (shared across all sweep configurations)...")
     t0 = time.time()
     diffusion = build_and_load_model(config.ckpt, device, config.lpips_weight)
-    torch.cuda.synchronize(device)
+    torch.cuda.synchronize(device_index)
     print(f"Model loaded in {time.time() - t0:.2f}s\n")
 
     # Pre-load images into GPU memory to eliminate disk I/O from timing
@@ -419,6 +432,7 @@ def main():
                         diffusion,
                         images,
                         device,
+                        device_index,
                         n_steps,
                         use_fp16,
                         config.gamma,
