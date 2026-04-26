@@ -1,7 +1,7 @@
 # SC26 CDC Reconstruction Progress Log
 
 Recorded: 2026-04-25 23:34:18 CDT
-Last updated: 2026-04-26 00:24:53 CDT
+Last updated: 2026-04-26 00:51:45 CDT
 Next meeting: 2026-05-01
 Owner: Yifan Yang
 Scope: Reconstruction / decoding / diffusion experiments on NSF ACCESS DeltaAI
@@ -101,6 +101,10 @@ export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
 
 17. The full job entered STEP 2, the batch-size pilot over steps `[20, 65]` and batch sizes `[1, 2]`.
 
+18. The full job completed STEP 2 batch-size pilot.
+
+19. The full job entered STEP 3, the repeated step sweep over `[5, 10, 20, 30, 50, 65, 100]`.
+
 ## Done vs Pending
 
 Completed in this cycle:
@@ -116,11 +120,13 @@ Completed in this cycle:
 - Full profiling sweep submitted to SLURM.
 - Full job baseline 65-step fp32 profiling completed.
 - Full job baseline 65-step fp16 profiling completed.
+- Full job STEP 2 batch-size pilot completed.
+- Full job STEP 3 repeated step sweep started.
 - Progress recorded and pushed to GitHub.
 
 Still pending:
 
-- Wait for SLURM job `2195446` to finish STEP 2 and STEP 3.
+- Wait for SLURM job `2195446` to finish STEP 3 and plot generation.
 - Collect final repeated-run averages from `output/sweep/step_sweep/sweep_summary.csv`.
 - Collect final figures from `output/plots`.
 - Determine the sampling-step elbow point for the 2026-05-01 meeting.
@@ -215,7 +221,7 @@ Interpretation:
 
 ## Completed Batch-Size Pilot
 
-Batch-size pilot completed for 20 denoising steps, fp32, two images.
+The initial interactive batch-size pilot completed for 20 denoising steps, fp32, two images.
 
 Observed result:
 
@@ -235,6 +241,41 @@ Message for Jacob:
 ```text
 For full-resolution reconstruction, I tested batch sizes 1 and 2 on DeltaAI GH200. Batch size 2 ran out of GPU memory, while batch size 1 completed successfully at about 44.5s inference time per image for 20 denoising steps. I will use batch_size=1 for the reconstruction experiments.
 ```
+
+## Full Job Batch-Size Pilot Results
+
+The submitted SLURM job `2195446` completed the repeated STEP 2 batch-size pilot.
+
+Configuration:
+
+- Steps tested: `20`, `65`
+- Precision: `fp32`
+- Batch sizes tested: `1`, `2`
+- Repeats: `2`
+- Images per configuration: `4`
+- Common cropped size: `5440 x 3648 pixels`
+
+Summary:
+
+| Steps | Precision | Batch size | Status | Avg inference time | Throughput | Peak GPU memory | PSNR | SSIM | BPP | N |
+|-------|-----------|------------|--------|--------------------|------------|-----------------|------|------|-----|---|
+| 20 | fp32 | 1 | Success | 44.39 s/image | 81.1 images/hour | 52212.6 MB | 30.50 dB | 0.8961 | 0.3295 | 8 |
+| 20 | fp32 | 2 | CUDA OOM | Not available | Not available | Not available | Not available | Not available | Not available | 0 |
+| 65 | fp32 | 1 | Success | 143.65 s/image | 25.1 images/hour | 52210.8 MB | 29.95 dB | 0.8846 | 0.3295 | 8 |
+| 65 | fp32 | 2 | CUDA OOM | Not available | Not available | Not available | Not available | Not available | Not available | 0 |
+
+Decision:
+
+```text
+The repeated batch-size pilot confirms batch_size=1 for full-resolution reconstruction.
+```
+
+Interpretation:
+
+- `batch_size=2` failed for both 20-step and 65-step reconstruction.
+- GPU memory is the hard limit for full-image reconstruction.
+- Reducing denoising steps from 65 to 20 reduced inference time from 143.65 to 44.39 s/image, a 69.1% reduction.
+- 20 steps also had slightly higher PSNR and SSIM in this pilot, but the final conclusion should use the STEP 3 repeated sweep.
 
 ## Active Batch Job
 
@@ -277,6 +318,15 @@ repeat=01 | steps=20 | fp32 | batch=1 | infer 44.59s (44.59s/img, 80.7 img/hr) |
 ```
 
 The STEP 2 summary is still pending.
+
+Updated 2026-04-26 00:51 CDT:
+
+- STEP 2 batch-size pilot completed.
+- `batch_size=2` caused CUDA OOM for both 20 and 65 steps.
+- STEP 3 repeated step sweep started.
+- STEP 3 configuration: steps `[5, 10, 20, 30, 50, 65, 100]`, precisions `fp32 + fp16`, batch size `1`, repeats `3`, images per configuration `5`.
+- STEP 3 model loaded successfully and preloaded 5 images.
+- STEP 3 common cropped image size: `5440 x 3648 pixels`.
 
 ## Expected Outputs for May 1 Meeting
 
