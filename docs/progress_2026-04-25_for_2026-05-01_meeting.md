@@ -1,7 +1,7 @@
 # SC26 CDC Reconstruction Progress Log
 
 Recorded: 2026-04-25 23:34:18 CDT
-Last updated: 2026-04-25 23:37:44 CDT
+Last updated: 2026-04-26 00:24:53 CDT
 Next meeting: 2026-05-01
 Owner: Yifan Yang
 Scope: Reconstruction / decoding / diffusion experiments on NSF ACCESS DeltaAI
@@ -21,6 +21,7 @@ The latest pushed commits for this work are:
 - `1913f5c` Add reconstruction profiling experiment workflow
 - `9ea1303` Fix DeltaAI profiling runtime setup
 - `d6c062f` Record reconstruction progress for May meeting
+- `5c5cead` Expand reconstruction progress timeline
 
 ## Process Timeline
 
@@ -94,6 +95,12 @@ export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
 
 14. The full repeated profiling sweep was submitted as SLURM job `2195446`.
 
+15. The full job completed baseline 65-step fp32 profiling.
+
+16. The full job completed baseline 65-step fp16 profiling.
+
+17. The full job entered STEP 2, the batch-size pilot over steps `[20, 65]` and batch sizes `[1, 2]`.
+
 ## Done vs Pending
 
 Completed in this cycle:
@@ -107,11 +114,13 @@ Completed in this cycle:
 - Batch-size pilot.
 - Batch-size decision for reconstruction: `batch_size=1`.
 - Full profiling sweep submitted to SLURM.
+- Full job baseline 65-step fp32 profiling completed.
+- Full job baseline 65-step fp16 profiling completed.
 - Progress recorded and pushed to GitHub.
 
 Still pending:
 
-- Wait for SLURM job `2195446` to finish.
+- Wait for SLURM job `2195446` to finish STEP 2 and STEP 3.
 - Collect final repeated-run averages from `output/sweep/step_sweep/sweep_summary.csv`.
 - Collect final figures from `output/plots`.
 - Determine the sampling-step elbow point for the 2026-05-01 meeting.
@@ -187,6 +196,23 @@ Observed result for 20 denoising steps, fp32, one image:
 
 Interpretation: reconstruction is dominated by diffusion inference.
 
+## Full Job Baseline Results
+
+The submitted SLURM job `2195446` completed the 65-step baseline profiles for both fp32 and fp16.
+
+| Setting | Inference time | Total time | Inference share | Peak GPU memory | PSNR | SSIM | BPP |
+|---------|----------------|------------|-----------------|-----------------|------|------|-----|
+| 65 steps, fp32 | 143.80 s/image | 151.18 s/image | 95.1% | 52422.4 MB | 29.83 dB | 0.8822 | 0.3317 |
+| 65 steps, fp16 | 133.73 s/image | 140.94 s/image | 94.9% | 34406.6 MB | 29.92 dB | 0.8817 | `inf` |
+
+Interpretation:
+
+- fp16 reduced inference time from 143.80 to 133.73 s/image, about a 7.0% speedup.
+- fp16 reduced peak GPU memory from 52.4 GB to 34.4 GB, about a 34% reduction.
+- PSNR and SSIM stayed almost unchanged.
+- fp16 produced `BPP = inf`, so fp16 BPP and compression ratio should not be used for final bitrate conclusions.
+- For bitrate and compression-ratio reporting, use fp32 results.
+
 ## Completed Batch-Size Pilot
 
 Batch-size pilot completed for 20 denoising steps, fp32, two images.
@@ -236,6 +262,21 @@ Warnings observed so far are non-blocking:
 
 - `torchvision` VGG weight argument deprecation warning
 - `torch.cuda.amp.autocast` future deprecation warning
+
+Updated 2026-04-26 00:24 CDT:
+
+- Baseline 65-step fp32 profiling completed.
+- Baseline 65-step fp16 profiling completed.
+- STEP 2 batch-size pilot started.
+- Common cropped image size reported by the job: `5440 x 3648 pixels`.
+- STEP 2 started with `steps=20`, `fp32`, `batch=1`.
+- First observed STEP 2 row:
+
+```text
+repeat=01 | steps=20 | fp32 | batch=1 | infer 44.59s (44.59s/img, 80.7 img/hr) | PSNR 30.64 dB | SSIM 0.8954 | mem 52014 MB
+```
+
+The STEP 2 summary is still pending.
 
 ## Expected Outputs for May 1 Meeting
 
