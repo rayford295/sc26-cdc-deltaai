@@ -1,7 +1,7 @@
 # SC26 CDC Reconstruction Progress Log
 
 Recorded: 2026-04-25 23:34:18 CDT
-Last updated: 2026-04-26 00:51:45 CDT
+Last updated: 2026-04-26 07:18:04 CDT
 Next meeting: 2026-05-01
 Owner: Yifan Yang
 Scope: Reconstruction / decoding / diffusion experiments on NSF ACCESS DeltaAI
@@ -22,6 +22,8 @@ The latest pushed commits for this work are:
 - `9ea1303` Fix DeltaAI profiling runtime setup
 - `d6c062f` Record reconstruction progress for May meeting
 - `5c5cead` Expand reconstruction progress timeline
+- `0a7a228` Record baseline profiling results
+- `d0ed767` Record batch pilot summary
 
 ## Process Timeline
 
@@ -105,6 +107,8 @@ export PYTHONPATH=/u/yyang48/.local/lib/python3.12/site-packages:$PYTHONPATH
 
 19. The full job entered STEP 3, the repeated step sweep over `[5, 10, 20, 30, 50, 65, 100]`.
 
+20. The full job completed STEP 3, generated all plots, and saved all outputs.
+
 ## Done vs Pending
 
 Completed in this cycle:
@@ -122,14 +126,14 @@ Completed in this cycle:
 - Full job baseline 65-step fp16 profiling completed.
 - Full job STEP 2 batch-size pilot completed.
 - Full job STEP 3 repeated step sweep started.
+- Full job STEP 3 repeated step sweep completed.
+- All five reconstruction plots generated.
 - Progress recorded and pushed to GitHub.
 
 Still pending:
 
-- Wait for SLURM job `2195446` to finish STEP 3 and plot generation.
-- Collect final repeated-run averages from `output/sweep/step_sweep/sweep_summary.csv`.
-- Collect final figures from `output/plots`.
-- Determine the sampling-step elbow point for the 2026-05-01 meeting.
+- Copy or reference final CSV and PNG outputs for the May 1 slides.
+- Visually inspect reconstructed examples from the recommended low-step settings.
 - Prepare the final slide figure format for Jacob to match.
 
 ## DeltaAI Environment Status
@@ -277,22 +281,87 @@ Interpretation:
 - Reducing denoising steps from 65 to 20 reduced inference time from 143.65 to 44.39 s/image, a 69.1% reduction.
 - 20 steps also had slightly higher PSNR and SSIM in this pilot, but the final conclusion should use the STEP 3 repeated sweep.
 
-## Active Batch Job
+## Full Job Step-Sweep Results
 
-The full reconstruction profiling sweep has been submitted.
+The submitted SLURM job `2195446` completed STEP 3 and generated plots.
+
+Finished at:
+
+```text
+Sun Apr 26 06:28:36 AM CDT 2026
+```
+
+Configuration:
+
+- Steps tested: `5`, `10`, `20`, `30`, `50`, `65`, `100`
+- Precisions tested: `fp32`, `fp16`
+- Batch size: `1`
+- Repeats: `3`
+- Images per configuration: `5`
+- Rows per configuration: `15`
+- Common cropped size: `5440 x 3648 pixels`
+
+Final repeated step-sweep summary:
+
+| Steps | Precision | Batch | Inference time | Throughput | Peak GPU memory | PSNR | SSIM | BPP | N |
+|-------|-----------|-------|----------------|------------|-----------------|------|------|-----|---|
+| 5 | fp16 | 1 | 10.47 s/image | 343.8 images/hour | 34207.5 MB | 31.63 dB | 0.9063 | `inf` | 15 |
+| 10 | fp16 | 1 | 20.73 s/image | 173.7 images/hour | 34207.5 MB | 31.05 dB | 0.9017 | `inf` | 15 |
+| 20 | fp16 | 1 | 41.26 s/image | 87.2 images/hour | 34207.5 MB | 30.55 dB | 0.8958 | `inf` | 15 |
+| 30 | fp16 | 1 | 61.80 s/image | 58.3 images/hour | 34207.5 MB | 30.37 dB | 0.8917 | `inf` | 15 |
+| 50 | fp16 | 1 | 102.87 s/image | 35.0 images/hour | 34207.5 MB | 30.15 dB | 0.8867 | `inf` | 15 |
+| 65 | fp16 | 1 | 133.68 s/image | 26.9 images/hour | 34207.5 MB | 30.03 dB | 0.8839 | `inf` | 15 |
+| 100 | fp16 | 1 | 205.54 s/image | 17.5 images/hour | 34207.5 MB | 29.87 dB | 0.8800 | `inf` | 15 |
+| 5 | fp32 | 1 | 11.27 s/image | 319.3 images/hour | 52225.8 MB | 31.57 dB | 0.9066 | 0.3300 | 15 |
+| 10 | fp32 | 1 | 22.29 s/image | 161.5 images/hour | 52225.9 MB | 31.00 dB | 0.9019 | 0.3300 | 15 |
+| 20 | fp32 | 1 | 44.36 s/image | 81.1 images/hour | 52225.9 MB | 30.47 dB | 0.8961 | 0.3300 | 15 |
+| 30 | fp32 | 1 | 67.16 s/image | 53.7 images/hour | 52225.9 MB | 30.25 dB | 0.8921 | 0.3300 | 15 |
+| 50 | fp32 | 1 | 110.56 s/image | 32.6 images/hour | 52225.9 MB | 30.03 dB | 0.8873 | 0.3300 | 15 |
+| 65 | fp32 | 1 | 143.67 s/image | 25.1 images/hour | 52225.8 MB | 29.92 dB | 0.8845 | 0.3300 | 15 |
+| 100 | fp32 | 1 | 220.85 s/image | 16.3 images/hour | 52225.9 MB | 29.77 dB | 0.8809 | 0.3300 | 15 |
+
+Generated plots:
+
+- `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_time_vs_steps.png`
+- `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_psnr_vs_steps.png`
+- `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_ssim_vs_steps.png`
+- `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_quality_vs_speed.png`
+- `/projects/bfod/$USER/cdc-deltaai/output/plots/plot_memory_vs_steps.png`
+
+Key findings from STEP 3:
+
+- Time scales strongly with denoising steps. In fp32, 65 steps took 143.67 s/image, while 5 steps took 11.27 s/image. This is a 92.2% reduction.
+- Throughput increased from 25.1 images/hour at 65 fp32 steps to 319.3 images/hour at 5 fp32 steps.
+- fp16 was consistently faster than fp32 and used much less memory.
+- fp16 peak memory was about 34.2 GB; fp32 peak memory was about 52.2 GB. This is about a 34.5% memory reduction.
+- PSNR and SSIM did not degrade at lower step counts in this run. The 5-step results had the highest PSNR/SSIM in both fp32 and fp16.
+- fp16 reported `BPP = inf` across all step counts, so fp16 BPP and compression ratio should not be used for bitrate conclusions.
+- fp32 BPP was stable at about `0.3300` across all step counts.
+
+Initial recommendation for the May 1 meeting:
+
+```text
+For reconstruction speed, 5 denoising steps is the best measured setting so far.
+Use batch_size=1. Use fp16 if the slide focuses on speed and memory. Use fp32 BPP for bitrate/compression-ratio reporting. Before finalizing the recommendation, visually inspect reconstructed images from 5, 10, and 20 steps.
+```
+
+## Batch Job Record
+
+The full reconstruction profiling sweep completed successfully.
 
 - SLURM job id: `2195446`
 - Partition: `ghx4`
 - Job name: `cdc_profile_sweep`
 - Node: `gh087`
-- Status when recorded: running
+- Status when recorded: completed
+- Completed at: `Sun Apr 26 06:28:36 AM CDT 2026`
 - Log file:
 
 ```bash
 xparam/logs/profiling_2195446.log
 ```
 
-The job is currently running the baseline 65-step fp32 profile. Early log output showed normal progress:
+Early log output showed normal progress:
 
 ```text
 Processing 10 images (index 0 to 9)
@@ -328,9 +397,22 @@ Updated 2026-04-26 00:51 CDT:
 - STEP 3 model loaded successfully and preloaded 5 images.
 - STEP 3 common cropped image size: `5440 x 3648 pixels`.
 
-## Expected Outputs for May 1 Meeting
+Updated 2026-04-26 06:28 CDT:
 
-If the batch job completes, collect these files:
+- STEP 3 repeated step sweep completed.
+- Plot generation completed.
+- All outputs were saved to:
+
+```bash
+/projects/bfod/$USER/cdc-deltaai/output/profiling
+/projects/bfod/$USER/cdc-deltaai/output/sweep/batch_pilot
+/projects/bfod/$USER/cdc-deltaai/output/sweep/step_sweep
+/projects/bfod/$USER/cdc-deltaai/output/plots
+```
+
+## Generated Outputs for May 1 Meeting
+
+The batch job completed and produced these files:
 
 - `/projects/bfod/$USER/cdc-deltaai/output/profiling/baseline_65steps_fp32/profile_report.txt`
 - `/projects/bfod/$USER/cdc-deltaai/output/profiling/baseline_65steps_fp16/profile_report.txt`
