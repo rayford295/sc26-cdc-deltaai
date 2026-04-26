@@ -4,9 +4,109 @@ Lossy image compression with Conditional Diffusion Models, adapted for running o
 
 Based on: [Lossy Image Compression with Conditional Diffusion Models](https://arxiv.org/pdf/2209.06950.pdf)
 
-## Current Evaluation Goal
+## SC26 Experiment Snapshot
 
-The current evaluation task is to:
+Updated: 2026-04-26
+
+This repository is now organized around the SC26 CDC experiment design:
+
+| Owner | Pipeline | Main question | Current status |
+|-------|----------|---------------|----------------|
+| Jacob | Compression / encoding | How fast can we shrink the data? | Compression evaluation workflow and GH200 100-image results are documented below. |
+| Yifan | Reconstruction / decoding / diffusion | How fast can we use the data again? | DeltaAI reconstruction profiling, step sweep, batch-size pilot, plots, and visual examples are complete for this cycle. |
+
+Use the top sections as the project index. The older detailed setup and evaluation notes are preserved below as reference rather than removed.
+
+## Phase Timeline and Task Index
+
+| Phase | Date / cycle | Task | Main files and outputs |
+|-------|--------------|------|------------------------|
+| Phase 0 | Initial setup | Port CDC code and DeltaAI paths into this repo. | `environment.yml`, `epsilonparam/`, `xparam/`, `scripts/run_deltaai.sh` |
+| Phase 1 | GH200 compression evaluation | Run x-param compression evaluation on 100 drone images and summarize bitrate / compression ratio. | `xparam/evaluate_compression.py`, `xparam/run_evaluation.sh`, `xparam/run_b02048_resume.sh` |
+| Phase 2 | 2026-04-25 | Add reconstruction profiling workflow for Yifan's SC26 task. | `xparam/profile_reconstruction.py`, `xparam/sweep_steps.py`, `xparam/plot_results.py`, `xparam/run_profiling_sweep.sh` |
+| Phase 3 | 2026-04-26 | Run DeltaAI reconstruction experiments: single-image sanity test, batch-size pilot, repeated step sweep, fp32/fp16 comparison, and plotting. | `results/2026-04-26-reconstruction/`, `docs/progress_2026-04-25_for_2026-05-01_meeting.md` |
+| Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes |
+
+## Current Reconstruction Results for Yifan
+
+The reconstruction experiments were run on NSF ACCESS DeltaAI GH200 with full-resolution drone images cropped to `5440 x 3648` pixels.
+
+Key conclusions for the 2026-05-01 meeting:
+
+- Diffusion inference is the dominant bottleneck in reconstruction.
+- The realistic full-image reconstruction batch size is `1`; `batch_size=2` caused CUDA OOM.
+- Reducing denoising steps is the strongest speed lever.
+- The 5-step setting is the fastest measured setting so far and passed the first visual check on image `100_0005_0001`.
+- fp16 reduces memory and improves speed, but fp16 BPP is invalid in the current output, so use fp32 for bitrate and compression-ratio discussion.
+
+Representative step-sweep results:
+
+| Precision | Steps | Batch | Inference sec/image | Images/hour | Peak GPU memory | PSNR | SSIM | BPP |
+|-----------|-------|-------|---------------------|-------------|-----------------|------|------|-----|
+| fp32 | 5 | 1 | 11.27 | 319.3 | 52.2 GB | 31.57 | 0.9066 | 0.3300 |
+| fp32 | 20 | 1 | 44.37 | 81.2 | 52.2 GB | 30.47 | 0.8961 | 0.3300 |
+| fp32 | 65 | 1 | 143.67 | 25.1 | 52.2 GB | 29.92 | 0.8845 | 0.3300 |
+| fp16 | 5 | 1 | 10.47 | 343.8 | 34.2 GB | 31.63 | 0.9063 | invalid |
+| fp16 | 65 | 1 | 133.68 | 26.9 | 34.2 GB | 30.03 | 0.8839 | invalid |
+
+Visual check:
+
+![Reconstruction visual comparison](results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg)
+
+## Results Index
+
+The current report-ready reconstruction artifacts are stored in:
+
+```text
+results/2026-04-26-reconstruction/
+├── plots/                  # speed, quality, memory, and trade-off figures
+├── reports/                # fp32/fp16 profile reports
+├── tables/                 # sweep summary CSVs
+└── visual_examples_small/  # compressed visual examples for GitHub and slides
+```
+
+Important files:
+
+| File | Use |
+|------|-----|
+| `results/2026-04-26-reconstruction/tables/sweep_summary.csv` | Main repeated step-sweep summary |
+| `results/2026-04-26-reconstruction/tables/batch_pilot_summary.csv` | Batch-size pilot summary |
+| `results/2026-04-26-reconstruction/plots/plot_time_vs_steps.png` | Reconstruction time vs denoising steps |
+| `results/2026-04-26-reconstruction/plots/plot_quality_vs_speed.png` | Speed-quality trade-off |
+| `results/2026-04-26-reconstruction/plots/plot_memory_vs_steps.png` | GPU memory comparison |
+| `results/2026-04-26-reconstruction/reports/profile_report_fp32.txt` | Detailed 65-step fp32 profile |
+| `results/2026-04-26-reconstruction/reports/profile_report_fp16.txt` | Detailed 65-step fp16 profile |
+| `results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg` | Slide-ready visual comparison |
+
+## Current DeltaAI Runtime Setup
+
+The working DeltaAI setup for the 2026-04-26 reconstruction run was:
+
+```bash
+module load python/miniforge3_pytorch/2.10.0
+conda activate base
+export PYTHONPATH=$HOME/.local/lib/python3.12/site-packages:$PYTHONPATH
+python -m pip install --user scikit-image compressai einops lpips ema-pytorch tqdm matplotlib pandas --quiet
+```
+
+The checkpoint used for the current reconstruction results was:
+
+```text
+/projects/bfod/$USER/cdc-deltaai/weights/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt
+```
+
+## Next Tasks
+
+Before the 2026-05-01 meeting:
+
+1. Prepare one reconstruction slide using `plot_time_vs_steps.png`, `plot_quality_vs_speed.png`, `plot_memory_vs_steps.png`, and the visual comparison image.
+2. Tell Jacob that the reconstruction realistic full-image batch size is `1`.
+3. Keep the conclusion focused on reconstruction latency: diffusion inference dominates runtime, and fewer denoising steps give the largest speedup.
+4. If more visual evidence is needed, generate one or two more compressed visual comparisons from different images. Do not commit full-resolution reconstruction PNGs unless there is a specific reason.
+
+## Compression Evaluation Goal
+
+The compression-side evaluation task is to:
 
 1. Apply the compression model on 100 drone images.
 2. Report the overall compression rate from the evaluation output.
@@ -24,7 +124,7 @@ For each run, collect and summarize the following outputs:
 - total reconstructed image size
 - file size ratio between original and reconstructed images
 
-## Current Status
+## Compression Evaluation Status
 
 The DeltaAI x-parameterization workflow has been debugged and completed successfully on GH200 for the full 100-image evaluation sweep across all 6 checkpoints.
 
@@ -85,7 +185,12 @@ In other words, the currently confirmed and usable GPU target in this environmen
 │   ├── run_evaluation.sh              # SLURM job: 100-image compression evaluation
 │   ├── run_b02048_resume.sh           # SLURM job: targeted resume for unfinished b0.2048 images
 │   └── run_profiling_sweep.sh         # SLURM job: full profiling + step sweep + plotting
+├── docs/                              # experiment plans and meeting-cycle progress notes
+├── results/                           # lightweight report-ready results committed to GitHub
+│   └── 2026-04-26-reconstruction/     # Yifan reconstruction outputs for the 2026-05-01 meeting cycle
+├── data/                              # data placement notes; large data stays on DeltaAI
 ├── imgs/                              # sample Kodak test images
+├── scripts/                           # DeltaAI helper scripts
 └── environment.yml                    # conda environment
 ```
 
@@ -99,6 +204,8 @@ HuggingFace: [rhyang/CDC_params](https://huggingface.co/rhyang/CDC_params)
 ---
 
 ## Running on NSF DeltaAI (UIUC)
+
+The commands below are preserved as the detailed DeltaAI reference for the original compression evaluation workflow. For the current reconstruction runtime used on 2026-04-26, start from the "Current DeltaAI Runtime Setup" section above.
 
 ### Step 1: Log in to DeltaAI
 
