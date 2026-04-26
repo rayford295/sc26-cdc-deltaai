@@ -10,6 +10,10 @@ Large raw outputs, full-resolution reconstructed PNGs, logs, model weights, and 
 |--------|-------|-------|---------|
 | `2026-04-26-reconstruction/` | 2026-04-25 to 2026-05-01 meeting cycle | Yifan | Reconstruction profiling, step sweep, batch-size decision, plots, reports, and visual examples |
 
+## Hardware Scope
+
+The current committed reconstruction results are DeltaAI GH200 results. Delta is a separate NCSA system and may provide H200 resources, but those are not part of the current committed reconstruction result set.
+
 ## Convention for Future Results
 
 Use one dated folder per experiment cycle:

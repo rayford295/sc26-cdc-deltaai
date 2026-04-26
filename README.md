@@ -95,6 +95,22 @@ The checkpoint used for the current reconstruction results was:
 /projects/bfod/$USER/cdc-deltaai/weights/x_param/image-l2-use_weight5-vimeo-d64-t8193-b0.2048-x-cosine-01-float32-aux0.9lpips_2.pt
 ```
 
+## Delta vs DeltaAI Hardware Note
+
+Use this distinction when describing the experiments:
+
+- **DeltaAI** is the system used for the current reconstruction experiments. The [official DeltaAI documentation](https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/index.html) describes it as powered by the NVIDIA **GH200 Grace Hopper Superchip**.
+- **Delta** is a related but separate NCSA system. The [Delta job-accounting documentation](https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/job_accounting.html) lists an `8-way H200` GPU node type.
+- Therefore, the 2026-04-26 results in this repository should be described as **DeltaAI GH200** results, not H100 or H200 results.
+- A Delta H200 comparison can be treated as future work only if the project allocation, partition name, and runtime environment are confirmed.
+
+ACCESS project resource snapshot from the portal, recorded 2026-04-26:
+
+| Project | Resource | Status | Balance | End date | Username |
+|---------|----------|--------|---------|----------|----------|
+| `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA Delta GPU | Active | 1.08K of 2.04K GPU hours remaining (53%) | 2026-08-07 | `yyang48` |
+| `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA DeltaAI | Active | 93 of 141 GPU hours remaining (66%) | 2026-08-07 | `yyang48` |
+
 ## Next Tasks
 
 Before the 2026-05-01 meeting:
@@ -111,9 +127,9 @@ The compression-side evaluation task is to:
 1. Apply the compression model on 100 drone images.
 2. Report the overall compression rate from the evaluation output.
 3. Compare the total size of the original images and the reconstructed images.
-4. Run the same evaluation workflow on both GPU targets when available:
-- GH200
-- H100
+4. Run the same evaluation workflow on additional confirmed GPU targets if needed:
+- DeltaAI GH200, already used for the current workflow
+- Delta H200, possible future comparison if allocation and partition access are confirmed
 
 For each run, collect and summarize the following outputs:
 - `compression_report.txt`
@@ -152,8 +168,8 @@ Interpretation:
 - The GH200 runtime was consistently about 143.4 seconds per image with 65 denoising steps.
 
 Remaining work:
-- Run the same evaluation on H100 once the partition name and access are confirmed.
-- Compare GH200 and H100 runtime and output statistics side by side.
+- If needed, run the same evaluation on Delta H200 once the partition name, allocation charging, and environment are confirmed.
+- Compare DeltaAI GH200 and Delta H200 runtime and output statistics side by side.
 
 ## GPU Partition Summary
 
@@ -168,7 +184,7 @@ Practical interpretation:
 - `ghx4` is the confirmed batch partition currently used for the GH200 evaluation jobs.
 - `ghx4-interactive` is the confirmed interactive partition currently used for debugging and validation runs.
 - `full` also reports GH200 nodes, but the current workflow has been validated on `ghx4` and `ghx4-interactive`.
-- No H100-backed partition is currently visible in `sinfo`, so an H100 run will require either a different partition name or additional access confirmation.
+- Delta H200 is documented under the separate Delta system. It is not the hardware used for the current DeltaAI run.
 
 In other words, the currently confirmed and usable GPU target in this environment is GH200.
 
@@ -352,7 +368,8 @@ srun --account=bfod-dtai-gh --partition=ghx4-interactive \
 | `ghx4` | 4x NVIDIA GH200 120GB | Current confirmed batch partition |
 | `ghx4-interactive` | 4x NVIDIA GH200 120GB | Current confirmed interactive partition |
 | `full` | 4x NVIDIA GH200 120GB | Visible in `sinfo`, but not the current validated workflow target |
-| `gpuH100x8` | 8x H100 | Planned target once partition and access are confirmed |
+
+Delta is separate from DeltaAI. The Delta documentation lists an `8-way H200` GPU node type, but the current repository results were generated on DeltaAI GH200.
 
 ---
 

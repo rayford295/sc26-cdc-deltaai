@@ -130,11 +130,12 @@ Completed in this cycle:
 - All five reconstruction plots generated.
 - Progress recorded and pushed to GitHub.
 
-Still pending:
+Current follow-up status:
 
-- Copy or reference final CSV and PNG outputs for the May 1 slides.
-- Visually inspect reconstructed examples from the recommended low-step settings.
-- Prepare the final slide figure format for Jacob to match.
+- No required reconstruction code runs remain for this week's task.
+- Final CSV, PNG, report, and visual comparison outputs have been copied into `results/2026-04-26-reconstruction/` and pushed to GitHub.
+- The first visual comparison check has been completed and looked acceptable.
+- If the group later asks for more evidence, optional follow-up work is to add one or two more visual comparisons from different images.
 
 ## DeltaAI Environment Status
 
@@ -156,6 +157,19 @@ The environment was validated with:
 - `torch.__version__ = 2.10.0+cu129`
 - `torch.cuda.is_available() = True`
 - CDC dependencies imported successfully: `skimage`, `compressai`, `einops`, `lpips`, `ema_pytorch`, `tqdm`, `matplotlib`, `pandas`
+
+Hardware clarification recorded on 2026-04-26:
+
+- The current reconstruction results are DeltaAI GH200 results.
+- DeltaAI is separate from Delta. The official DeltaAI documentation describes the system as NVIDIA GH200 Grace Hopper: <https://docs.ncsa.illinois.edu/systems/deltaai/en/latest/index.html>
+- Delta documentation lists an `8-way H200` GPU node type. Treat Delta H200 as possible future comparison work, not as hardware used in this run: <https://docs.ncsa.illinois.edu/systems/delta/en/latest/user_guide/job_accounting.html>
+
+ACCESS project resource snapshot from the portal:
+
+| Project | Resource | Status | Balance | End date | Username |
+|---------|----------|--------|---------|----------|----------|
+| `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA Delta GPU | Active | 1.08K of 2.04K GPU hours remaining (53%) | 2026-08-07 | `yyang48` |
+| `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA DeltaAI | Active | 93 of 141 GPU hours remaining (66%) | 2026-08-07 | `yyang48` |
 
 ## Data and Checkpoint Status
 

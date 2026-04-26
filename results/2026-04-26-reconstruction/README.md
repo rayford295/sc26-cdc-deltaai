@@ -6,6 +6,7 @@ This folder contains the report-ready outputs from Yifan's reconstruction profil
 
 - Cluster: NSF ACCESS DeltaAI
 - GPU target: GH200
+- Hardware note: DeltaAI is GH200; Delta is a separate NCSA system that documents H200 resources.
 - Pipeline: reconstruction / decoding / diffusion
 - Image size used by the model: `5440 x 3648` cropped from full-resolution drone images
 - Checkpoint: `b0.2048` x-parameterization checkpoint with `lpips_weight=0.9`
