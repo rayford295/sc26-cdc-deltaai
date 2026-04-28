@@ -17,6 +17,41 @@ This repository is now organized around the SC26 CDC experiment design:
 
 Use the top sections as the project index. The older detailed setup and evaluation notes are preserved below as reference rather than removed.
 
+## Compute Platform Baseline
+
+This repository currently tracks experiments across two NCSA systems:
+
+| System | Login | Confirmed GPU target | Account / allocation | Current role |
+|--------|-------|----------------------|----------------------|--------------|
+| DeltaAI | `ssh yyang48@dtai-login.delta.ncsa.illinois.edu` or `ssh yyang48@gh-login01.delta.ncsa.illinois.edu` | NVIDIA GH200 | `bfod-dtai-gh` | Completed 2026-04-26 reconstruction experiments |
+| Delta | `ssh yyang48@login.delta.ncsa.illinois.edu` or `ssh yyang48@dt-login.delta.ncsa.illinois.edu` | NVIDIA H200 visible through `gpuH200x8` and `gpuH200x8-interactive` | `bfod-delta-gpu` | Future GH200-vs-H200 comparison target |
+
+Important hardware distinction:
+
+- The committed 2026-04-26 results are **DeltaAI GH200** results.
+- Delta is a separate NCSA system. On 2026-04-28, Delta showed H200 partitions under the `bfod-delta-gpu` account.
+- No H100 partition was visible in the checked Delta `sinfo` output, so H100 is not yet a confirmed comparison target.
+- The next realistic hardware comparison is **DeltaAI GH200 vs Delta H200**.
+
+Delta resource check recorded on 2026-04-28:
+
+| Item | Value |
+|------|-------|
+| Delta login host reached | `dt-login02.delta.ncsa.illinois.edu` |
+| Delta account | `bfod-delta-gpu` |
+| Delta GPU balance | `1076` of `2037` GPU hours |
+| H200 batch partition | `gpuH200x8` |
+| H200 interactive partition | `gpuH200x8-interactive` |
+| H200 nodes | `gpue[01-08]` |
+
+Use this H200 smoke test before porting the full workflow to Delta:
+
+```bash
+srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:h200:1 --mem=32G \
+     --time=00:10:00 --pty bash
+```
+
 ## Phase Timeline and Task Index
 
 | Phase | Date / cycle | Task | Main files and outputs |
