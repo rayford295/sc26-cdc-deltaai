@@ -182,6 +182,12 @@ Future Delta comparison checklist:
   - H200 partitions visible: `gpuH200x8`, `gpuH200x8-interactive`
   - H200 nodes visible: `gpue[01-08]`
   - H100 partition: not visible in the checked `sinfo` output
+  - H200 interactive allocation succeeded on `gpue08.delta.ncsa.illinois.edu`
+  - `nvidia-smi` reported `NVIDIA H200`, driver `570.148.08`, CUDA `12.8`, and `143771 MiB` GPU memory
+  - Delta PyTorch module `pytorch-conda/2.8` loaded successfully
+  - PyTorch check: `2.8.0+cu128`, CUDA available, device `NVIDIA H200`
+  - CDC dependencies imported successfully after user-site install
+  - Delta can see the existing data and weights under `/projects/bfod/$USER/cdc-deltaai/`
 - After logging into Delta, confirm partition and allocation before running code:
 
 ```bash

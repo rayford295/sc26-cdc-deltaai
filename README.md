@@ -43,6 +43,13 @@ Delta resource check recorded on 2026-04-28:
 | H200 batch partition | `gpuH200x8` |
 | H200 interactive partition | `gpuH200x8-interactive` |
 | H200 nodes | `gpue[01-08]` |
+| H200 smoke-test node | `gpue08.delta.ncsa.illinois.edu` |
+| H200 GPU memory | `143771 MiB` |
+| H200 driver / CUDA | NVIDIA driver `570.148.08`, CUDA `12.8` |
+| Delta PyTorch module | `pytorch-conda/2.8` |
+| Delta PyTorch check | `2.8.0+cu128`, CUDA available, device `NVIDIA H200` |
+| CDC dependencies | `skimage`, `compressai`, `einops`, `lpips`, `ema_pytorch`, `tqdm`, `matplotlib`, `pandas` imported successfully |
+| Delta data / weights visibility | `/projects/bfod/$USER/cdc-deltaai/data/imgs` and `/projects/bfod/$USER/cdc-deltaai/weights/x_param` are visible on Delta |
 
 Use this H200 smoke test before porting the full workflow to Delta:
 
