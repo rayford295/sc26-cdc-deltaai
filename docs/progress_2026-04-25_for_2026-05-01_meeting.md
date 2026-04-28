@@ -188,6 +188,9 @@ Future Delta comparison checklist:
   - PyTorch check: `2.8.0+cu128`, CUDA available, device `NVIDIA H200`
   - CDC dependencies imported successfully after user-site install
   - Delta can see the existing data and weights under `/projects/bfod/$USER/cdc-deltaai/`
+  - H200 single-image sanity test completed on image `100_0005_0001.JPG`
+  - H200 20-step fp32 sanity result: model load `12.93s`, data load/preproc `0.38s`, inference `207.24s`, post-processing `9.49s`, total `217.11s`, peak memory `52013.4 MB`, PSNR `30.64`, SSIM `0.8955`, BPP `0.3299`
+  - Initial note: the H200 sanity run was much slower than the prior DeltaAI GH200 20-step single-image sanity test, so do not make a final hardware conclusion until repeated H200 runs are completed.
 - After logging into Delta, confirm partition and allocation before running code:
 
 ```bash
