@@ -190,7 +190,11 @@ Future Delta comparison checklist:
   - Delta can see the existing data and weights under `/projects/bfod/$USER/cdc-deltaai/`
   - H200 single-image sanity test completed on image `100_0005_0001.JPG`
   - H200 20-step fp32 sanity result: model load `12.93s`, data load/preproc `0.38s`, inference `207.24s`, post-processing `9.49s`, total `217.11s`, peak memory `52013.4 MB`, PSNR `30.64`, SSIM `0.8955`, BPP `0.3299`
-  - Initial note: the H200 sanity run was much slower than the prior DeltaAI GH200 20-step single-image sanity test, so do not make a final hardware conclusion until repeated H200 runs are completed.
+  - H200 batch-size pilot completed for 20 steps, fp32, 2 images, 1 repeat
+  - H200 batch pilot summary: batch 1 = `42.55s/image`, `84.6 img/hr`, `52127.4 MB`, PSNR `30.52`, SSIM `0.8942`, BPP `0.3306`, `N=2`
+  - H200 batch pilot summary: batch 2 = `53.14s/image`, `67.8 img/hr`, `108564.3 MB`, PSNR `30.51`, SSIM `0.8946`, BPP `0.3306`, `N=2`
+  - H200 batch decision: use `batch_size=1` for the next step sweep because batch 2 fits in memory but reduces throughput.
+  - Initial note: the H200 single-image profile showed unusually slow inference, but the batch pilot produced a more comparable `42.55s/image` at 20 fp32 steps. Use the batch pilot and repeated sweep for hardware comparison, not the one-off profile alone.
 - After logging into Delta, confirm partition and allocation before running code:
 
 ```bash

@@ -51,6 +51,8 @@ Delta resource check recorded on 2026-04-28:
 | CDC dependencies | `skimage`, `compressai`, `einops`, `lpips`, `ema_pytorch`, `tqdm`, `matplotlib`, `pandas` imported successfully |
 | Delta data / weights visibility | `/projects/bfod/$USER/cdc-deltaai/data/imgs` and `/projects/bfod/$USER/cdc-deltaai/weights/x_param` are visible on Delta |
 | H200 single-image sanity test | 20 steps fp32 completed on image `100_0005_0001.JPG`; inference `207.24s`, total `217.11s`, peak memory `52013.4 MB`, PSNR `30.64`, SSIM `0.8955`, BPP `0.3299` |
+| H200 batch pilot | 20 steps fp32, 2 images, 1 repeat: batch 1 = `42.55s/image`, `84.6 img/hr`, `52127.4 MB`; batch 2 = `53.14s/image`, `67.8 img/hr`, `108564.3 MB` |
+| H200 current batch decision | Use `batch_size=1` for H200 step sweep. Batch 2 fits in memory but reduces throughput in the pilot. |
 
 Use this H200 smoke test before porting the full workflow to Delta:
 
@@ -216,7 +218,7 @@ Current task status:
 
 - This week's required reconstruction code runs are complete on DeltaAI GH200.
 - Jacob can be told that the realistic full-image reconstruction batch size is `1`.
-- Delta H200 is now confirmed runnable for a single-image sanity test, but the initial H200 timing is slower than the DeltaAI GH200 sanity test. Treat it as an early result until repeated H200 runs are completed.
+- Delta H200 is now confirmed runnable. The H200 batch pilot supports `batch_size=1` for the next step sweep because `batch_size=2` fit in memory but reduced throughput.
 - More visual examples or a full Delta H200 sweep are optional future work, not blockers for this week's task.
 
 ## Compression Evaluation Goal
