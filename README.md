@@ -53,6 +53,20 @@ Delta resource check recorded on 2026-04-28:
 | H200 single-image sanity test | 20 steps fp32 completed on image `100_0005_0001.JPG`; inference `207.24s`, total `217.11s`, peak memory `52013.4 MB`, PSNR `30.64`, SSIM `0.8955`, BPP `0.3299` |
 | H200 batch pilot | 20 steps fp32, 2 images, 1 repeat: batch 1 = `42.55s/image`, `84.6 img/hr`, `52127.4 MB`; batch 2 = `53.14s/image`, `67.8 img/hr`, `108564.3 MB` |
 | H200 current batch decision | Use `batch_size=1` for H200 step sweep. Batch 2 fits in memory but reduces throughput in the pilot. |
+| H200 quick step sweep | Completed for steps `5, 20, 65`, fp32 + fp16, batch 1, 5 images, 3 repeats (`N=15` per config). |
+
+H200 quick step sweep summary:
+
+| Precision | Steps | Batch | Inference sec/image | Images/hour | Peak GPU memory | PSNR | SSIM | BPP |
+|-----------|-------|-------|---------------------|-------------|-----------------|------|------|-----|
+| fp32 | 5 | 1 | 10.87 | 331.2 | 52.2 GB | 31.56 | 0.9066 | 0.3300 |
+| fp32 | 20 | 1 | 42.74 | 84.2 | 52.2 GB | 30.48 | 0.8961 | 0.3300 |
+| fp32 | 65 | 1 | 138.48 | 26.0 | 52.2 GB | 29.92 | 0.8846 | 0.3300 |
+| fp16 | 5 | 1 | 10.29 | 350.1 | 34.2 GB | 31.63 | 0.9063 | invalid |
+| fp16 | 20 | 1 | 40.32 | 89.3 | 34.2 GB | 30.54 | 0.8958 | invalid |
+| fp16 | 65 | 1 | 130.64 | 27.6 | 34.2 GB | 30.02 | 0.8838 | invalid |
+
+Initial H200 interpretation: H200 is slightly faster than the prior DeltaAI GH200 sweep at the same step counts, but the difference is small. Use fp32 for BPP and compression-ratio reporting; use fp16 for speed and memory discussion only.
 
 Use this H200 smoke test before porting the full workflow to Delta:
 

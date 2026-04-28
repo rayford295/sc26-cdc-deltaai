@@ -195,6 +195,14 @@ Future Delta comparison checklist:
   - H200 batch pilot summary: batch 2 = `53.14s/image`, `67.8 img/hr`, `108564.3 MB`, PSNR `30.51`, SSIM `0.8946`, BPP `0.3306`, `N=2`
   - H200 batch decision: use `batch_size=1` for the next step sweep because batch 2 fits in memory but reduces throughput.
   - Initial note: the H200 single-image profile showed unusually slow inference, but the batch pilot produced a more comparable `42.55s/image` at 20 fp32 steps. Use the batch pilot and repeated sweep for hardware comparison, not the one-off profile alone.
+  - H200 quick step sweep completed for steps `5, 20, 65`, fp32 + fp16, batch size `1`, 5 images, 3 repeats.
+  - H200 fp32 quick sweep: 5 steps = `10.87s/image`, `331.2 img/hr`, `52.2 GB`, PSNR `31.56`, SSIM `0.9066`, BPP `0.3300`.
+  - H200 fp32 quick sweep: 20 steps = `42.74s/image`, `84.2 img/hr`, `52.2 GB`, PSNR `30.48`, SSIM `0.8961`, BPP `0.3300`.
+  - H200 fp32 quick sweep: 65 steps = `138.48s/image`, `26.0 img/hr`, `52.2 GB`, PSNR `29.92`, SSIM `0.8846`, BPP `0.3300`.
+  - H200 fp16 quick sweep: 5 steps = `10.29s/image`, `350.1 img/hr`, `34.2 GB`, PSNR `31.63`, SSIM `0.9063`, BPP invalid.
+  - H200 fp16 quick sweep: 20 steps = `40.32s/image`, `89.3 img/hr`, `34.2 GB`, PSNR `30.54`, SSIM `0.8958`, BPP invalid.
+  - H200 fp16 quick sweep: 65 steps = `130.64s/image`, `27.6 img/hr`, `34.2 GB`, PSNR `30.02`, SSIM `0.8838`, BPP invalid.
+  - H200 initial comparison note: H200 is slightly faster than DeltaAI GH200 at the same tested step counts, but the speed difference is modest.
 - After logging into Delta, confirm partition and allocation before running code:
 
 ```bash
