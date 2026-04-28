@@ -111,14 +111,38 @@ ACCESS project resource snapshot from the portal, recorded 2026-04-26:
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA Delta GPU | Active | 1.08K of 2.04K GPU hours remaining (53%) | 2026-08-07 | `yyang48` |
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA DeltaAI | Active | 93 of 141 GPU hours remaining (66%) | 2026-08-07 | `yyang48` |
 
-## Next Tasks
+## Future Delta Hardware Comparison
 
-Before the 2026-05-01 meeting:
+The current repository name and completed workflow are DeltaAI-focused, but the ACCESS project also has Delta GPU allocation. If the group wants to compare GH200 against H200 or any other Delta GPU, use Delta as a separate system and first confirm access before running experiments.
 
-1. Prepare one reconstruction slide using `plot_time_vs_steps.png`, `plot_quality_vs_speed.png`, `plot_memory_vs_steps.png`, and the visual comparison image.
-2. Tell Jacob that the reconstruction realistic full-image batch size is `1`.
-3. Keep the conclusion focused on reconstruction latency: diffusion inference dominates runtime, and fewer denoising steps give the largest speedup.
-4. If more visual evidence is needed, generate one or two more compressed visual comparisons from different images. Do not commit full-resolution reconstruction PNGs unless there is a specific reason.
+Delta login hostnames from the official Delta documentation:
+
+```bash
+ssh yyang48@login.delta.ncsa.illinois.edu
+# or
+ssh yyang48@dt-login.delta.ncsa.illinois.edu
+```
+
+After logging into Delta, confirm available hardware and charging before copying data or running jobs:
+
+```bash
+sinfo -o "%P %G %D %N"
+accounts
+module avail 2>&1 | grep -i -E "python|conda|cuda|pytorch"
+```
+
+Only after the Delta partition, account, and runtime environment are confirmed should we port the same experiment structure:
+
+1. Single-image sanity test.
+2. Batch-size pilot.
+3. Repeated step sweep.
+4. Same plots, tables, profile reports, and visual examples.
+
+Current task status:
+
+- This week's required reconstruction code runs are complete on DeltaAI GH200.
+- Jacob can be told that the realistic full-image reconstruction batch size is `1`.
+- More visual examples or a Delta H200 comparison are optional future work, not blockers for this week's task.
 
 ## Compression Evaluation Goal
 

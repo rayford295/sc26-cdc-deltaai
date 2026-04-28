@@ -171,6 +171,20 @@ ACCESS project resource snapshot from the portal:
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA Delta GPU | Active | 1.08K of 2.04K GPU hours remaining (53%) | 2026-08-07 | `yyang48` |
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA DeltaAI | Active | 93 of 141 GPU hours remaining (66%) | 2026-08-07 | `yyang48` |
 
+Future Delta comparison checklist:
+
+- DeltaAI login used in this cycle: `ssh yyang48@dtai-login.delta.ncsa.illinois.edu`
+- Delta login for possible H200 comparison: `ssh yyang48@login.delta.ncsa.illinois.edu` or `ssh yyang48@dt-login.delta.ncsa.illinois.edu`
+- After logging into Delta, confirm partition and allocation before running code:
+
+```bash
+sinfo -o "%P %G %D %N"
+accounts
+module avail 2>&1 | grep -i -E "python|conda|cuda|pytorch"
+```
+
+- If Delta H200 is available, rerun the same experiment structure: single-image sanity test, batch-size pilot, repeated step sweep, and matching plots/reports.
+
 ## Data and Checkpoint Status
 
 Drone image data is present on DeltaAI:
