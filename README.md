@@ -114,14 +114,12 @@ Visual check:
 
 ## Results Index
 
-The current report-ready reconstruction artifacts are stored in:
+The report-ready reconstruction artifacts are stored by experiment cycle:
 
 ```text
-results/2026-04-26-reconstruction/
-├── plots/                  # speed, quality, memory, and trade-off figures
-├── reports/                # fp32/fp16 profile reports
-├── tables/                 # sweep summary CSVs
-└── visual_examples_small/  # compressed visual examples for GitHub and slides
+results/
+├── 2026-04-26-reconstruction/       # DeltaAI GH200 full reconstruction sweep
+└── 2026-04-28-h200-reconstruction/  # Delta H200 quick comparison sweep
 ```
 
 Important files:
@@ -136,6 +134,10 @@ Important files:
 | `results/2026-04-26-reconstruction/reports/profile_report_fp32.txt` | Detailed 65-step fp32 profile |
 | `results/2026-04-26-reconstruction/reports/profile_report_fp16.txt` | Detailed 65-step fp16 profile |
 | `results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg` | Slide-ready visual comparison |
+| `results/2026-04-28-h200-reconstruction/tables/sweep_summary.csv` | Delta H200 quick step-sweep summary |
+| `results/2026-04-28-h200-reconstruction/tables/batch_pilot_summary.csv` | Delta H200 batch-size pilot summary |
+| `results/2026-04-28-h200-reconstruction/plots/plot_time_vs_steps.png` | Delta H200 time vs denoising steps |
+| `results/2026-04-28-h200-reconstruction/plots/plot_quality_vs_speed.png` | Delta H200 speed-quality trade-off |
 
 ## Current DeltaAI Runtime Setup
 

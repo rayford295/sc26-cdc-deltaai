@@ -9,15 +9,16 @@ Large raw outputs, full-resolution reconstructed PNGs, logs, model weights, and 
 | Folder | Cycle | Owner | Purpose |
 |--------|-------|-------|---------|
 | `2026-04-26-reconstruction/` | 2026-04-25 to 2026-05-01 meeting cycle | Yifan | Reconstruction profiling, step sweep, batch-size decision, plots, reports, and visual examples |
+| `2026-04-28-h200-reconstruction/` | 2026-04-28 hardware comparison extension | Yifan | Delta H200 batch pilot and quick reconstruction step sweep |
 
 ## Hardware Scope
 
-The current committed reconstruction results are DeltaAI GH200 results. Delta is a separate NCSA system and has visible H200 partitions under the `bfod-delta-gpu` account:
+The first committed reconstruction result set is DeltaAI GH200. Delta is a separate NCSA system and has visible H200 partitions under the `bfod-delta-gpu` account:
 
 - `gpuH200x8`
 - `gpuH200x8-interactive`
 
-Delta H200 results should be stored in a separate future dated result folder so they are not mixed with the 2026-04-26 DeltaAI GH200 result set.
+Delta H200 results are stored separately under `2026-04-28-h200-reconstruction/` so they are not mixed with the 2026-04-26 DeltaAI GH200 result set.
 
 ## Convention for Future Results
 
