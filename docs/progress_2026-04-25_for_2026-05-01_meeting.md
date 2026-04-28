@@ -175,6 +175,13 @@ Future Delta comparison checklist:
 
 - DeltaAI login used in this cycle: `ssh yyang48@dtai-login.delta.ncsa.illinois.edu`
 - Delta login for possible H200 comparison: `ssh yyang48@login.delta.ncsa.illinois.edu` or `ssh yyang48@dt-login.delta.ncsa.illinois.edu`
+- Delta login was tested successfully on 2026-04-28:
+  - Host: `dt-login02.delta.ncsa.illinois.edu`
+  - Account: `bfod-delta-gpu`
+  - Balance: `1076` of `2037` GPU hours
+  - H200 partitions visible: `gpuH200x8`, `gpuH200x8-interactive`
+  - H200 nodes visible: `gpue[01-08]`
+  - H100 partition: not visible in the checked `sinfo` output
 - After logging into Delta, confirm partition and allocation before running code:
 
 ```bash
@@ -183,7 +190,15 @@ accounts
 module avail 2>&1 | grep -i -E "python|conda|cuda|pytorch"
 ```
 
-- If Delta H200 is available, rerun the same experiment structure: single-image sanity test, batch-size pilot, repeated step sweep, and matching plots/reports.
+- H200 interactive smoke test command:
+
+```bash
+srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:h200:1 --mem=32G \
+     --time=00:10:00 --pty bash
+```
+
+- If the H200 smoke test succeeds, rerun the same experiment structure: single-image sanity test, batch-size pilot, repeated step sweep, and matching plots/reports.
 
 ## Data and Checkpoint Status
 

@@ -12,7 +12,12 @@ Large raw outputs, full-resolution reconstructed PNGs, logs, model weights, and 
 
 ## Hardware Scope
 
-The current committed reconstruction results are DeltaAI GH200 results. Delta is a separate NCSA system and may provide H200 resources, but those are not part of the current committed reconstruction result set.
+The current committed reconstruction results are DeltaAI GH200 results. Delta is a separate NCSA system and has visible H200 partitions under the `bfod-delta-gpu` account:
+
+- `gpuH200x8`
+- `gpuH200x8-interactive`
+
+Delta H200 results should be stored in a separate future dated result folder so they are not mixed with the 2026-04-26 DeltaAI GH200 result set.
 
 ## Convention for Future Results
 

@@ -111,9 +111,32 @@ ACCESS project resource snapshot from the portal, recorded 2026-04-26:
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA Delta GPU | Active | 1.08K of 2.04K GPU hours remaining (53%) | 2026-08-07 | `yyang48` |
 | `CIV250023: Upscaling for Flood Resilience: A Benchmarking Study` | NCSA DeltaAI | Active | 93 of 141 GPU hours remaining (66%) | 2026-08-07 | `yyang48` |
 
+Delta login and resource check completed on 2026-04-28:
+
+```text
+Host: dt-login02.delta.ncsa.illinois.edu
+Account: bfod-delta-gpu
+Balance: 1076 of 2037 GPU hours
+```
+
+Observed Delta GPU partitions:
+
+| Partition | GRES | Nodes | Notes |
+|-----------|------|-------|-------|
+| `gpuH200x8` | `gpu:h200:8` | 8 | Batch H200 partition, nodes `gpue[01-08]` |
+| `gpuH200x8-interactive` | `gpu:h200:8` | 8 | Interactive H200 partition, nodes `gpue[01-08]` |
+| `gpuA100x4` | `gpu:nvidia_a100:4` | 99 | Batch A100 4-GPU partition |
+| `gpuA100x4-interactive` | `gpu:nvidia_a100:4` | 100 | Interactive A100 4-GPU partition |
+| `gpuA100x8` | `gpu:nvidia_a100:8` | 6 | Batch A100 8-GPU partition |
+| `gpuA100x8-interactive` | `gpu:nvidia_a100:8` | 6 | Interactive A100 8-GPU partition |
+| `gpuA40x4` | `gpu:nvidia_a40:4` | 98 | Batch A40 partition |
+| `gpuA40x4-interactive` | `gpu:nvidia_a40:4` | 100 | Interactive A40 partition |
+
+No H100 partition was visible in the `sinfo` output from Delta on 2026-04-28. The next hardware comparison target should therefore be **DeltaAI GH200 vs Delta H200**, unless H100 access is confirmed separately.
+
 ## Future Delta Hardware Comparison
 
-The current repository name and completed workflow are DeltaAI-focused, but the ACCESS project also has Delta GPU allocation. If the group wants to compare GH200 against H200 or any other Delta GPU, use Delta as a separate system and first confirm access before running experiments.
+The current repository name and completed workflow are DeltaAI-focused, but the ACCESS project also has Delta GPU allocation. If the group wants to compare GH200 against H200 or any other Delta GPU, use Delta as a separate system.
 
 Delta login hostnames from the official Delta documentation:
 
@@ -129,6 +152,14 @@ After logging into Delta, confirm available hardware and charging before copying
 sinfo -o "%P %G %D %N"
 accounts
 module avail 2>&1 | grep -i -E "python|conda|cuda|pytorch"
+```
+
+H200 interactive smoke test command:
+
+```bash
+srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
+     --nodes=1 --ntasks=1 --gres=gpu:h200:1 --mem=32G \
+     --time=00:10:00 --pty bash
 ```
 
 Only after the Delta partition, account, and runtime environment are confirmed should we port the same experiment structure:
