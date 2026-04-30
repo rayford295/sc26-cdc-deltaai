@@ -1,0 +1,24 @@
+{
+  "workspace": "/Users/yifn/Documents/sc26-cdc-deltaai/slides/2026-04-30-weekly-progress",
+  "pptx": "/Users/yifn/Documents/sc26-cdc-deltaai/slides/2026-04-30-weekly-progress/output/output.pptx",
+  "checks": {
+    "pptx_package": {
+      "slide_count": 9,
+      "media_count": 6,
+      "chart_count": 1,
+      "zero_byte_media": [],
+      "invalid_png_media": [],
+      "placeholder_text": [],
+      "debug_line_colors": [],
+      "slide_numbers": [],
+      "warnings": [],
+      "failures": []
+    },
+    "output_hygiene": {
+      "output_dir": "/Users/yifn/Documents/sc26-cdc-deltaai/slides/2026-04-30-weekly-progress/output",
+      "unexpected_files": []
+    }
+  },
+  "failures": [],
+  "warnings": []
+}

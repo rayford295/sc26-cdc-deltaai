@@ -84,7 +84,7 @@ srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
 | Phase 1 | GH200 compression evaluation | Run x-param compression evaluation on 100 drone images and summarize bitrate / compression ratio. | `xparam/evaluate_compression.py`, `xparam/run_evaluation.sh`, `xparam/run_b02048_resume.sh` |
 | Phase 2 | 2026-04-25 | Add reconstruction profiling workflow for Yifan's SC26 task. | `xparam/profile_reconstruction.py`, `xparam/sweep_steps.py`, `xparam/plot_results.py`, `xparam/run_profiling_sweep.sh` |
 | Phase 3 | 2026-04-26 | Run DeltaAI reconstruction experiments: single-image sanity test, batch-size pilot, repeated step sweep, fp32/fp16 comparison, and plotting. | `results/2026-04-26-reconstruction/`, `docs/progress_2026-04-25_for_2026-05-01_meeting.md` |
-| Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes |
+| Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes, `slides/2026-04-30-weekly-progress/` |
 
 ## Current Reconstruction Results for Yifan
 
@@ -138,6 +138,12 @@ Important files:
 | `results/2026-04-28-h200-reconstruction/tables/batch_pilot_summary.csv` | Delta H200 batch-size pilot summary |
 | `results/2026-04-28-h200-reconstruction/plots/plot_time_vs_steps.png` | Delta H200 time vs denoising steps |
 | `results/2026-04-28-h200-reconstruction/plots/plot_quality_vs_speed.png` | Delta H200 speed-quality trade-off |
+
+## Slides Index
+
+| Date | Deck | Coverage |
+|------|------|----------|
+| 2026-04-30 | `slides/2026-04-30-weekly-progress/output/output.pptx` | Weekly reconstruction progress: DeltaAI GH200 baseline, Delta H200 quick sweep, batch-size decision, matched GH200-vs-H200 comparison, and next steps |
 
 ## Current DeltaAI Runtime Setup
 

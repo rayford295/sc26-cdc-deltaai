@@ -1,0 +1,5 @@
+node_modules/
+scratch/*
+!scratch/previews/
+!scratch/previews/*.png
+!scratch/quality-report.json
