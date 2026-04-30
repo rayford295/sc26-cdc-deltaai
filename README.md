@@ -143,7 +143,7 @@ Important files:
 
 | Date | Deck | Coverage |
 |------|------|----------|
-| 2026-04-30 | `slides/2026-04-30-weekly-progress/output/output.pptx` | Weekly reconstruction progress: DeltaAI GH200 baseline, Delta H200 quick sweep, batch-size decision, matched GH200-vs-H200 comparison, and next steps |
+| 2026-04-30 | `slides/2026-04-30-weekly-progress/SC26_CDC_Weekly_Progress_2026-04-30.pptx` | Weekly reconstruction progress: DeltaAI GH200 baseline, Delta H200 quick sweep, batch-size decision, matched GH200-vs-H200 comparison, and next steps |
 
 ## Current DeltaAI Runtime Setup
 

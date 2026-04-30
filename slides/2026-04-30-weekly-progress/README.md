@@ -6,7 +6,8 @@ This folder contains the editable slide deck for the CDC reconstruction weekly u
 
 | File | Use |
 |------|-----|
-| `output/output.pptx` | Editable PowerPoint deck |
+| `SC26_CDC_Weekly_Progress_2026-04-30.pptx` | Standalone editable PowerPoint deck for sharing |
+| `output/output.pptx` | Build output copy of the same deck |
 | `src/create_weekly_progress_deck.mjs` | Rebuild script for the deck |
 | `scratch/previews/` | Rendered PNG previews used for quality checks |
 
