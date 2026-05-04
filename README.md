@@ -85,6 +85,7 @@ srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
 | Phase 2 | 2026-04-25 | Add reconstruction profiling workflow for Yifan's SC26 task. | `xparam/profile_reconstruction.py`, `xparam/sweep_steps.py`, `xparam/plot_results.py`, `xparam/run_profiling_sweep.sh` |
 | Phase 3 | 2026-04-26 | Run DeltaAI reconstruction experiments: single-image sanity test, batch-size pilot, repeated step sweep, fp32/fp16 comparison, and plotting. | `results/2026-04-26-reconstruction/`, `docs/progress_2026-04-25_for_2026-05-01_meeting.md` |
 | Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes, `slides/2026-04-30-weekly-progress/` |
+| Phase 5 | May 2026 poster cycle | Run compression speed, storage, batching, tiling, and HPC scaling experiments. | `experiments/compression/`, `docs/sc26_compression_experiment_plan.md` |
 
 ## Current Reconstruction Results for Yifan
 
@@ -325,6 +326,8 @@ In other words, the currently confirmed and usable GPU target in this environmen
 │   ├── run_b02048_resume.sh           # SLURM job: targeted resume for unfinished b0.2048 images
 │   └── run_profiling_sweep.sh         # SLURM job: full profiling + step sweep + plotting
 ├── docs/                              # experiment plans and meeting-cycle progress notes
+├── experiments/
+│   └── compression/                   # SC26 compression experiment runner, configs, SLURM jobs, and result templates
 ├── results/                           # lightweight report-ready results committed to GitHub
 │   └── 2026-04-26-reconstruction/     # Yifan reconstruction outputs for the 2026-05-01 meeting cycle
 ├── data/                              # data placement notes; large data stays on DeltaAI
