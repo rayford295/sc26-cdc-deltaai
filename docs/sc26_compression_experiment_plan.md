@@ -20,6 +20,29 @@ Make CDC compression fast, scalable, and storage-efficient enough for the SC26 p
 | `experiments/compression/slurm/06_summarize_all.sbatch` | Final all-run summary table |
 | `experiments/compression/slurm/run_all_suite.sh` | Submits the full suite |
 
+## Timestamp Convention
+
+All DeltaAI outputs go under a timestamped suite folder by default:
+
+```text
+/projects/bfod/$USER/cdc-deltaai/output/sc26_compression/$RUN_STAMP/
+```
+
+`RUN_STAMP` defaults to `YYYYMMDD_HHMMSS`. The Python runner also records:
+
+- `run_start_utc`
+- `run_end_utc`
+- `run_start_local`
+- `run_end_local`
+- per-batch or per-image start/end timestamps in `results.csv`
+- SLURM job ID and array task ID when available
+
+You can set a human-readable timestamp label:
+
+```bash
+RUN_STAMP=20260504_meeting_prep N_IMAGES=8 experiments/compression/slurm/run_all_suite.sh
+```
+
 ## Experiment Matrix
 
 ### Baseline

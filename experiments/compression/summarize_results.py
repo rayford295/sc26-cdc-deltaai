@@ -10,6 +10,10 @@ from typing import Iterable
 
 
 DEFAULT_COLUMNS = [
+    "run_start_utc",
+    "run_end_utc",
+    "run_stamp",
+    "slurm_job_id",
     "experiment_name",
     "compression_setting",
     "resolution_label",

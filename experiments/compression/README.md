@@ -40,8 +40,12 @@ experiments/compression/compression_controls_report.md
 On DeltaAI the default output root is:
 
 ```text
-/projects/bfod/$USER/cdc-deltaai/output/sc26_compression/
+/projects/bfod/$USER/cdc-deltaai/output/sc26_compression/$RUN_STAMP/
 ```
+
+`RUN_STAMP` defaults to `YYYYMMDD_HHMMSS`. The full suite uses one shared
+timestamp for all submitted jobs, so baseline, checkpoint, tiling, scaling, and
+storage results stay together.
 
 Each run writes:
 
@@ -67,6 +71,10 @@ The core table columns are:
 
 | Column | Meaning |
 | --- | --- |
+| `run_start_utc` | experiment start timestamp in UTC |
+| `run_end_utc` | experiment end timestamp in UTC |
+| `run_stamp` | suite timestamp used in the output folder |
+| `slurm_job_id` | SLURM job ID, if available |
 | `resolution_label` | native, 4k, 2k, or 1k |
 | `batch_size` | full-image batch size, or tile batch size for tiled runs |
 | `tile_size` | `0` for no tiling, otherwise tile edge length |
@@ -130,6 +138,12 @@ Submit the whole suite:
 
 ```bash
 N_IMAGES=8 experiments/compression/slurm/run_all_suite.sh
+```
+
+To choose a timestamp yourself:
+
+```bash
+RUN_STAMP=20260504_meeting_prep N_IMAGES=8 experiments/compression/slurm/run_all_suite.sh
 ```
 
 For poster-quality numbers, raise `N_IMAGES` after the smoke run succeeds:

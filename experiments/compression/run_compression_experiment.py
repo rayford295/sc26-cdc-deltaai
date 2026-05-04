@@ -22,9 +22,11 @@ import json
 import math
 import os
 import pathlib
+import socket
 import sys
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from typing import Iterable
 
 import numpy as np
@@ -132,6 +134,31 @@ def parse_args() -> ExperimentConfig:
     if args.tile_batch_size < 0:
         raise ValueError("--tile_batch_size must be >= 0")
     return ExperimentConfig(**vars(args))
+
+
+def timestamp_fields(prefix: str) -> dict[str, object]:
+    now_utc = datetime.now(timezone.utc)
+    return {
+        f"{prefix}_utc": now_utc.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        f"{prefix}_local": now_utc.astimezone().isoformat(timespec="seconds"),
+        f"{prefix}_epoch": round(now_utc.timestamp(), 3),
+    }
+
+
+def runtime_fields() -> dict[str, str]:
+    keys = [
+        "RUN_STAMP",
+        "SLURM_JOB_ID",
+        "SLURM_JOB_NAME",
+        "SLURM_ARRAY_JOB_ID",
+        "SLURM_ARRAY_TASK_ID",
+        "SLURM_SUBMIT_DIR",
+        "SLURM_CLUSTER_NAME",
+    ]
+    fields = {"hostname": socket.gethostname()}
+    for key in keys:
+        fields[key.lower()] = os.environ.get(key, "")
+    return fields
 
 
 def get_cuda_device(device_index: int) -> tuple[torch.device, int]:
@@ -310,6 +337,7 @@ def run_full_image(
         effective_batch_size = len(batch_items)
 
         torch.cuda.reset_peak_memory_stats(device_index)
+        batch_start_ts = timestamp_fields("batch_start")
         wall_start = time.perf_counter()
         batch_tensor = batch_tensor_cpu.to(device)
         timer.start()
@@ -329,6 +357,7 @@ def run_full_image(
         bpp_values = bpp.detach().float().cpu().reshape(-1).tolist()
         postproc_sec = time.perf_counter() - post_start
         wall_sec = time.perf_counter() - wall_start
+        batch_end_ts = timestamp_fields("batch_end")
 
         for item_index, path in enumerate(batch_paths):
             recon_single = reconstructed[item_index : item_index + 1]
@@ -349,6 +378,8 @@ def run_full_image(
             rows.append(
                 {
                     "status": "success",
+                    **batch_start_ts,
+                    **batch_end_ts,
                     "experiment_name": config.experiment_name,
                     "compression_setting": config.compression_setting,
                     "resolution_label": config.resolution_label,
@@ -443,6 +474,7 @@ def run_tiled(
     precision_label = "fp16" if config.fp16 else "fp32"
 
     for image_index, path in enumerate(selected):
+        image_start_ts = timestamp_fields("image_start")
         wall_start = time.perf_counter()
         tensor, meta = prepare_image(path, config.max_edge)
         original = tensor.clone()
@@ -493,6 +525,7 @@ def run_tiled(
         effective_bpp = total_bits / float(meta["width"] * meta["height"])
         estimated_bytes = estimated_bytes_from_bpp(meta["width"], meta["height"], effective_bpp)
         wall_sec = time.perf_counter() - wall_start
+        image_end_ts = timestamp_fields("image_end")
 
         out_path = ""
         recon_png_bytes = ""
@@ -505,6 +538,8 @@ def run_tiled(
         rows.append(
             {
                 "status": "success",
+                **image_start_ts,
+                **image_end_ts,
                 "experiment_name": config.experiment_name,
                 "compression_setting": config.compression_setting,
                 "resolution_label": config.resolution_label,
@@ -581,7 +616,15 @@ def numeric_values(rows: list[dict[str, object]], field: str) -> list[float]:
     return values
 
 
-def summarize_rows(rows: list[dict[str, object]], config: ExperimentConfig, model_load_sec: float, total_wall_sec: float) -> dict[str, object]:
+def summarize_rows(
+    rows: list[dict[str, object]],
+    config: ExperimentConfig,
+    model_load_sec: float,
+    total_wall_sec: float,
+    run_start_ts: dict[str, object],
+    run_end_ts: dict[str, object],
+    runtime_meta: dict[str, str],
+) -> dict[str, object]:
     success_rows = [row for row in rows if row.get("status") == "success"]
     first = success_rows[0] if success_rows else {}
 
@@ -598,6 +641,9 @@ def summarize_rows(rows: list[dict[str, object]], config: ExperimentConfig, mode
     effective_bpp = (total_estimated_bytes * 8.0 / total_pixels) if total_pixels else float("nan")
 
     return {
+        **run_start_ts,
+        **run_end_ts,
+        **runtime_meta,
         "experiment_name": config.experiment_name,
         "compression_setting": config.compression_setting,
         "resolution_label": config.resolution_label,
@@ -640,6 +686,10 @@ def write_report(path: pathlib.Path, summary: dict[str, object], config: Experim
         "| --- | --- |",
     ]
     for key in [
+        "run_start_utc",
+        "run_end_utc",
+        "run_stamp",
+        "slurm_job_id",
         "compression_setting",
         "resolution_label",
         "mode",
@@ -662,6 +712,8 @@ def write_report(path: pathlib.Path, summary: dict[str, object], config: Experim
 
 
 def main() -> None:
+    run_start_ts = timestamp_fields("run_start")
+    runtime_meta = runtime_fields()
     config = parse_args()
     out_dir = pathlib.Path(config.out_dir)
     visuals_dir = out_dir / "visuals"
@@ -690,11 +742,24 @@ def main() -> None:
         rows = run_full_image(diffusion, selected, config, device, device_index, visuals_dir)
 
     total_wall_sec = time.perf_counter() - total_start
-    summary = summarize_rows(rows, config, model_load_sec, total_wall_sec)
+    run_end_ts = timestamp_fields("run_end")
+    summary = summarize_rows(rows, config, model_load_sec, total_wall_sec, run_start_ts, run_end_ts, runtime_meta)
 
     write_csv(out_dir / "results.csv", rows)
     write_csv(out_dir / "summary.csv", [summary])
-    (out_dir / "manifest.json").write_text(json.dumps({"config": asdict(config), "summary": summary}, indent=2) + "\n")
+    (out_dir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "config": asdict(config),
+                "runtime": runtime_meta,
+                "run_start": run_start_ts,
+                "run_end": run_end_ts,
+                "summary": summary,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     write_report(out_dir / "report.md", summary, config)
 
     print("\nSummary:")
