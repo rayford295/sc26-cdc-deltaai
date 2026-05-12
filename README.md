@@ -13,7 +13,7 @@ This repository is now organized around the SC26 CDC experiment design:
 | Owner | Pipeline | Main question | Current status |
 |-------|----------|---------------|----------------|
 | Jacob | Compression / encoding | How fast can we shrink the data? | Compression evaluation workflow and GH200 100-image results are documented below. |
-| Yifan | Reconstruction / decoding / diffusion / tiling optimization | How fast can we use the data again? | DeltaAI reconstruction profiling is complete, and the 2026-05-12 tiling smoke test shows that `512 x 512` tiles can cut memory and runtime for compression-side reconstruction. |
+| Yifan | Reconstruction / decoding / diffusion / tiling optimization | How fast can we use the data again? | DeltaAI reconstruction profiling is complete, and the 2026-05-12 tiling pilot shows that `512 x 512` tiles cut memory and runtime for compression-side reconstruction. |
 
 Use the top sections as the project index. The older detailed setup and evaluation notes are preserved below as reference rather than removed.
 
@@ -86,7 +86,7 @@ srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
 | Phase 3 | 2026-04-26 | Run DeltaAI reconstruction experiments: single-image sanity test, batch-size pilot, repeated step sweep, fp32/fp16 comparison, and plotting. | `results/2026-04-26-reconstruction/`, `docs/progress_2026-04-25_for_2026-05-01_meeting.md` |
 | Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes, `slides/2026-04-30-weekly-progress/` |
 | Phase 5 | May 2026 poster cycle | Run compression speed, storage, batching, tiling, and HPC scaling experiments. | `experiments/compression/`, `docs/sc26_compression_experiment_plan.md` |
-| Phase 5a | 2026-05-12 | Complete Yifan's DeltaAI tiling smoke test for full-resolution images. | `results/2026-05-12-yifan-tiling-smoke/`, `docs/progress_2026-05-12_yifan_tiling.md` |
+| Phase 5a | 2026-05-12 | Complete Yifan's DeltaAI tiling smoke test and `N_IMAGES=8` pilot for full-resolution images. | `results/2026-05-12-yifan-tiling-pilot/`, `results/2026-05-12-yifan-tiling-smoke/`, `docs/progress_2026-05-12_yifan_tiling.md` |
 
 ## Current Reconstruction Results for Yifan
 
@@ -114,18 +114,18 @@ Visual check:
 
 ![Reconstruction visual comparison](results/2026-04-26-reconstruction/visual_examples_small/comparison_100_0005_0001.jpg)
 
-## Current Yifan Tiling Smoke Result
+## Current Yifan Tiling Pilot Result
 
-The 2026-05-12 DeltaAI GH200 smoke test validates the tiling path for Yifan's current weekly task. It used one full-resolution drone image cropped to `5440 x 3648`, the `baseline_b02048` checkpoint, `65` denoising steps, and fp32 inference.
+The 2026-05-12 DeltaAI GH200 pilot validates the tiling path for Yifan's current weekly task. It used eight full-resolution drone images cropped to `5440 x 3648`, the `baseline_b02048` checkpoint, `65` denoising steps, and fp32 inference.
 
 | Setup | Time per image | Peak GPU memory | Compression ratio | PSNR | SSIM | Seam metric |
 |-------|----------------|-----------------|-------------------|------|------|-------------|
-| No tiling | 144.17 s | 51.8 GB | 72.74x | 30.05 | 0.8838 | n/a |
-| `512 x 512` tile | 86.43 s | 3.0 GB | 68.71x | 29.88 | 0.8813 | 0.028631 |
-| `1024 x 1024` tile | 88.39 s | 11.2 GB | 65.99x | 30.01 | 0.8824 | 0.028634 |
-| `2048 x 2048` tile | 95.98 s | 43.8 GB | 65.94x | 30.09 | 0.8832 | 0.028444 |
+| No tiling | 143.55 s | 52.0 GB | 72.74x | 29.88 | 0.8847 | n/a |
+| `512 x 512` tile | 86.01 s | 3.0 GB | 68.79x | 29.73 | 0.8822 | 0.027796 |
+| `1024 x 1024` tile | 88.35 s | 11.2 GB | 66.11x | 29.82 | 0.8835 | 0.028595 |
+| `2048 x 2048` tile | 95.39 s | 43.8 GB | 66.04x | 29.90 | 0.8841 | 0.031026 |
 
-Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17x in this smoke test, while PSNR and SSIM stayed close to the no-tiling reference. This is not yet the final poster statistic; the next run should use `N_IMAGES=8` and inspect the stitched visuals for visible boundary artifacts.
+Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. This is the current weekly result; before final poster reporting, inspect the stitched visuals and rerun the selected setup on a larger image set.
 
 ## Results Index
 
@@ -135,7 +135,8 @@ The report-ready reconstruction artifacts are stored by experiment cycle:
 results/
 ├── 2026-04-26-reconstruction/       # DeltaAI GH200 full reconstruction sweep
 ├── 2026-04-28-h200-reconstruction/  # Delta H200 quick comparison sweep
-└── 2026-05-12-yifan-tiling-smoke/   # DeltaAI GH200 tiling smoke test
+├── 2026-05-12-yifan-tiling-smoke/   # DeltaAI GH200 tiling smoke test
+└── 2026-05-12-yifan-tiling-pilot/   # DeltaAI GH200 tiling pilot
 ```
 
 Important files:
@@ -154,8 +155,9 @@ Important files:
 | `results/2026-04-28-h200-reconstruction/tables/batch_pilot_summary.csv` | Delta H200 batch-size pilot summary |
 | `results/2026-04-28-h200-reconstruction/plots/plot_time_vs_steps.png` | Delta H200 time vs denoising steps |
 | `results/2026-04-28-h200-reconstruction/plots/plot_quality_vs_speed.png` | Delta H200 speed-quality trade-off |
+| `results/2026-05-12-yifan-tiling-pilot/tables/combined_summary.csv` | Yifan `N_IMAGES=8` tiling pilot summary |
 | `results/2026-05-12-yifan-tiling-smoke/tables/combined_summary.csv` | Yifan tiling smoke-test summary |
-| `docs/progress_2026-05-12_yifan_tiling.md` | Weekly progress note for the tiling result and next run |
+| `docs/progress_2026-05-12_yifan_tiling.md` | Weekly progress note for the tiling pilot result and next run |
 
 ## Slides Index
 

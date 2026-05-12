@@ -11,6 +11,7 @@ Large raw outputs, full-resolution reconstructed PNGs, logs, model weights, and 
 | `2026-04-26-reconstruction/` | 2026-04-25 to 2026-05-01 meeting cycle | Yifan | Reconstruction profiling, step sweep, batch-size decision, plots, reports, and visual examples |
 | `2026-04-28-h200-reconstruction/` | 2026-04-28 hardware comparison extension | Yifan | Delta H200 batch pilot and quick reconstruction step sweep |
 | `2026-05-12-yifan-tiling-smoke/` | 2026-05-12 weekly update | Yifan | DeltaAI GH200 tiling smoke test for 512, 1024, and 2048 patch sizes |
+| `2026-05-12-yifan-tiling-pilot/` | 2026-05-12 weekly update | Yifan | DeltaAI GH200 `N_IMAGES=8` tiling pilot for 512, 1024, and 2048 patch sizes |
 
 ## Hardware Scope
 
