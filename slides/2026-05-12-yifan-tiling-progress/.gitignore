@@ -1,0 +1,8 @@
+node_modules/
+src/.*.swp
+!output/
+!output/*.pptx
+scratch/*
+!scratch/previews/
+!scratch/previews/*.png
+!scratch/previews/contact_sheet.png

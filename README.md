@@ -165,6 +165,7 @@ Important files:
 | Date | Deck | Coverage |
 |------|------|----------|
 | 2026-04-30 | `slides/2026-04-30-weekly-progress/SC26_CDC_Weekly_Progress_2026-04-30.pptx` | Weekly reconstruction progress: DeltaAI GH200 baseline, Delta H200 quick sweep, batch-size decision, matched GH200-vs-H200 comparison, and next steps |
+| 2026-05-12 | `slides/2026-05-12-yifan-tiling-progress/SC26_CDC_Yifan_Tiling_Progress_2026-05-12.pptx` | Yifan tiling progress: DeltaAI GH200 pilot, 512 tile recommendation, memory/runtime gains, visual artifact check, and next run |
 
 ## Current DeltaAI Runtime Setup
 
