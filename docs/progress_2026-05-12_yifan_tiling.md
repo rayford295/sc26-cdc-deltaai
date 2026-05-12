@@ -14,6 +14,7 @@ Test whether tiling can make CDC compression faster and more memory efficient wi
   - `1024 x 1024` tiles
   - `2048 x 2048` tiles
 - Generated `combined_summary.csv` and `combined_summary.md` under the timestamped DeltaAI output folder.
+- Downloaded the saved stitched visuals and added lightweight overview and seam-region examples to GitHub.
 
 ## Pilot Result
 
@@ -26,15 +27,15 @@ Test whether tiling can make CDC compression faster and more memory efficient wi
 
 ## Main Interpretation
 
-The tiling workflow is now runnable on DeltaAI and stable across the eight-image pilot. `512 x 512` tiling reduced wall time from `143.55` seconds to `86.01` seconds and reduced peak GPU memory from `52.0` GB to `3.0` GB. PSNR and SSIM stayed close to the no-tiling reference. The seam metric was recorded for all tiled cases, but the saved stitched visuals still need a manual artifact check before using this as a final figure.
+The tiling workflow is now runnable on DeltaAI and stable across the eight-image pilot. `512 x 512` tiling reduced wall time from `143.55` seconds to `86.01` seconds and reduced peak GPU memory from `52.0` GB to `3.0` GB. PSNR and SSIM stayed close to the no-tiling reference. Visual inspection of the saved overview and seam-region examples found no obvious grid-like stitching seams in the checked sample.
 
 ## Next Step
 
-Inspect the saved stitched visuals from the pilot, then rerun the selected setup on a larger image set if the seams look acceptable:
+Rerun the selected setup on a larger image set:
 
 ```bash
 cd /projects/bfod/$USER/cdc-deltaai/code_tiling_fixed
 sbatch --export=ALL,REPO_DIR=/projects/bfod/$USER/cdc-deltaai/code_tiling_fixed,RUN_STAMP=20260512_yifan_tiling_final,N_IMAGES=50,SAVE_VISUAL_LIMIT=4 experiments/compression/slurm/03_tiling_sweep.sbatch
 ```
 
-Use `512 x 512` as the current recommended default for speed and memory. Keep `1024 x 1024` as the quality-oriented backup if visual seam inspection favors larger tiles.
+Use `512 x 512` as the current recommended default for speed and memory. Keep `1024 x 1024` as the quality-oriented backup if later larger-sample visual checks show artifacts for smaller tiles.

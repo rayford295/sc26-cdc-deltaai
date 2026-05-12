@@ -125,7 +125,7 @@ The 2026-05-12 DeltaAI GH200 pilot validates the tiling path for Yifan's current
 | `1024 x 1024` tile | 88.35 s | 11.2 GB | 66.11x | 29.82 | 0.8835 | 0.028595 |
 | `2048 x 2048` tile | 95.39 s | 43.8 GB | 66.04x | 29.90 | 0.8841 | 0.031026 |
 
-Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. This is the current weekly result; before final poster reporting, inspect the stitched visuals and rerun the selected setup on a larger image set.
+Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. Visual inspection of the saved overview and seam-region examples found no obvious grid-like stitching seams in the checked sample. This is the current weekly result; before final poster reporting, rerun the selected setup on a larger image set.
 
 ## Results Index
 
@@ -156,6 +156,7 @@ Important files:
 | `results/2026-04-28-h200-reconstruction/plots/plot_time_vs_steps.png` | Delta H200 time vs denoising steps |
 | `results/2026-04-28-h200-reconstruction/plots/plot_quality_vs_speed.png` | Delta H200 speed-quality trade-off |
 | `results/2026-05-12-yifan-tiling-pilot/tables/combined_summary.csv` | Yifan `N_IMAGES=8` tiling pilot summary |
+| `results/2026-05-12-yifan-tiling-pilot/visual_examples_small/` | Lightweight overview and seam-region examples for visual artifact checking |
 | `results/2026-05-12-yifan-tiling-smoke/tables/combined_summary.csv` | Yifan tiling smoke-test summary |
 | `docs/progress_2026-05-12_yifan_tiling.md` | Weekly progress note for the tiling pilot result and next run |
 

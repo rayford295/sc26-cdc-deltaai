@@ -34,7 +34,17 @@ The `512 x 512` tiled run is the best current speed and memory setup. It reduced
 
 The pilot confirms the smoke-test trend on eight images. Smaller tiles give the largest memory reduction and the fastest runtime. The `1024 x 1024` and `2048 x 2048` cases keep PSNR and SSIM slightly closer to no tiling, but they use more GPU memory and run slower than `512 x 512`.
 
-For the weekly update, use `512 x 512` as the recommended default for speed and memory. Before final poster reporting, inspect the saved stitched visuals and then rerun the selected setup on a larger image set.
+For the weekly update, use `512 x 512` as the recommended default for speed and memory. Before final poster reporting, rerun the selected setup on a larger image set.
+
+## Visual Artifact Check
+
+Visual inspection of the saved overviews and same-region crops found no obvious grid-like stitching seams in the `512 x 512`, `1024 x 1024`, or `2048 x 2048` stitched outputs for image `100_0005_0001`. The road surface contains real lane markings, pavement boundaries, and compression haze, but the tiled outputs do not show a new regular tile boundary pattern in the checked region.
+
+Use the seam-region examples below as the quick visual evidence:
+
+![No-tiling seam region](visual_examples_small/100_0005_0001_no_tiling_seam_region.jpg)
+
+![512 tile seam region](visual_examples_small/100_0005_0001_tile512_seam_region.jpg)
 
 ## Files
 
@@ -42,3 +52,5 @@ For the weekly update, use `512 x 512` as the recommended default for speed and 
 | --- | --- |
 | `tables/combined_summary.csv` | Machine-readable pilot summary |
 | `tables/combined_summary.md` | Markdown table copied from the DeltaAI combined summary |
+| `visual_examples_small/*_overview.jpg` | Downsampled overview images for no tiling and each tile size |
+| `visual_examples_small/*_seam_region.jpg` | Crops from the same road/intersection region for visual seam inspection |
