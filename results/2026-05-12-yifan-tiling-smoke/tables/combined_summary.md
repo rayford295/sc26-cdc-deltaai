@@ -1,0 +1,8 @@
+# SC26 Compression Experiment Summary
+
+| run_start_utc | run_end_utc | run_stamp | slurm_job_id | experiment_name | compression_setting | resolution_label | mode | tile_size | batch_size | n_images | width | height | avg_wall_sec | avg_inference_sec | avg_peak_gpu_mem_mb | avg_bpp | avg_compression_ratio | avg_psnr_db | avg_ssim | avg_seam_error_mean | storage_label |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-05-12T05:05:55Z | 2026-05-12T05:07:33Z | 20260512_yifan_tiling_smoke3 | 2274966 | tile_1024 | baseline_b02048 | native_full_resolution | tiled | 1024 | 4 | 1 | 5440 | 3648 | 88.3916 | 84.4669 | 11180.4 | 0.363689 | 65.9904 | 30.0104 | 0.882385 | 0.028634 | shared |
+| 2026-05-12T05:07:37Z | 2026-05-12T05:09:22Z | 20260512_yifan_tiling_smoke3 | 2274966 | tile_2048 | baseline_b02048 | native_full_resolution | tiled | 2048 | 4 | 1 | 5440 | 3648 | 95.9835 | 91.5332 | 43823.4 | 0.363985 | 65.9368 | 30.0869 | 0.883206 | 0.028444 | shared |
+| 2026-05-12T05:04:15Z | 2026-05-12T05:05:51Z | 20260512_yifan_tiling_smoke3 | 2274966 | tile_512 | baseline_b02048 | native_full_resolution | tiled | 512 | 4 | 1 | 5440 | 3648 | 86.432 | 82.3958 | 3019.6 | 0.349309 | 68.7071 | 29.8816 | 0.881253 | 0.028631 | shared |
+| 2026-05-12T05:01:32Z | 2026-05-12T05:04:10Z | 20260512_yifan_tiling_smoke3 | 2274966 | tile_none_reference | baseline_b02048 | native_full_resolution | full_image | 0 | 1 | 1 | 5440 | 3648 | 144.1737 | 144.1755 | 51785.9 | 0.329931 | 72.7424 | 30.0477 | 0.883784 |  | shared |

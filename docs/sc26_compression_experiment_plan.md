@@ -108,6 +108,8 @@ Tile sizes:
 
 Each tile is compressed independently and stitched back together. The runner records seam artifact metrics and saves stitched visuals for inspection.
 
+Status on 2026-05-12: the one-image DeltaAI GH200 smoke test completed for no tiling, `512 x 512`, `1024 x 1024`, and `2048 x 2048` tiles. The `512 x 512` case reduced wall time from `144.17` seconds to `86.43` seconds and peak GPU memory from `51.8` GB to `3.0` GB, with PSNR `29.88` and SSIM `0.8813`. Treat this as a smoke result; repeat with `N_IMAGES=8` before using the numbers as poster results.
+
 ## Main Deliverable Table
 
 Use `combined_summary.md` or `combined_summary.csv` from each run folder.
