@@ -12,7 +12,15 @@
 #SBATCH --output=experiments/compression/slurm/logs/scaling_%A_%a.log
 #SBATCH --error=experiments/compression/slurm/logs/scaling_%A_%a.log
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -euo pipefail
+
+if [[ -n "${REPO_DIR:-}" && -f "${REPO_DIR}/experiments/compression/slurm/common_deltaai.sh" ]]; then
+  SCRIPT_DIR="${REPO_DIR}/experiments/compression/slurm"
+elif [[ -n "${SLURM_SUBMIT_DIR:-}" && -f "${SLURM_SUBMIT_DIR}/experiments/compression/slurm/common_deltaai.sh" ]]; then
+  SCRIPT_DIR="${SLURM_SUBMIT_DIR}/experiments/compression/slurm"
+else
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 source "${SCRIPT_DIR}/common_deltaai.sh"
 
 RUN_ROOT="${OUT_BASE}/04_hpc_scaling_array"
