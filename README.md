@@ -6,14 +6,14 @@ Based on: [Lossy Image Compression with Conditional Diffusion Models](https://ar
 
 ## SC26 Experiment Snapshot
 
-Updated: 2026-05-12
+Updated: 2026-05-14
 
 This repository is now organized around the SC26 CDC experiment design:
 
 | Owner | Pipeline | Main question | Current status |
 |-------|----------|---------------|----------------|
 | Jacob | Compression / encoding | How fast can we shrink the data? | Compression evaluation workflow and GH200 100-image results are documented below. |
-| Yifan | Reconstruction / decoding / diffusion / tiling optimization | How fast can we use the data again? | DeltaAI reconstruction profiling is complete, and the 2026-05-12 tiling pilot shows that `512 x 512` tiles cut memory and runtime for compression-side reconstruction. |
+| Yifan | Reconstruction / decoding / diffusion / tiling optimization | How fast can we use the data again? | DeltaAI reconstruction profiling is complete. The 2026-05-12 tiling pilot shows that `512 x 512` tiles cut memory and runtime, and the next run adds `256 x 256` plus heatmap-based quality checks. |
 
 Use the top sections as the project index. The older detailed setup and evaluation notes are preserved below as reference rather than removed.
 
@@ -87,6 +87,7 @@ srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
 | Phase 4 | Before 2026-05-01 meeting | Prepare slide-ready conclusions and align figure format with Jacob's compression results. | Reconstruction plots, summary CSVs, visual comparison image, meeting notes, `slides/2026-04-30-weekly-progress/` |
 | Phase 5 | May 2026 poster cycle | Run compression speed, storage, batching, tiling, and HPC scaling experiments. | `experiments/compression/`, `docs/sc26_compression_experiment_plan.md` |
 | Phase 5a | 2026-05-12 | Complete Yifan's DeltaAI tiling smoke test and `N_IMAGES=8` pilot for full-resolution images. | `results/2026-05-12-yifan-tiling-pilot/`, `results/2026-05-12-yifan-tiling-smoke/`, `docs/progress_2026-05-12_yifan_tiling.md` |
+| Phase 5b | 2026-05-14 | Prepare the follow-up `256 x 256` tiling run, add pixel-error metrics, and save original/reconstruction/error-heatmap panels. | `experiments/compression/run_compression_experiment.py`, `experiments/compression/slurm/03_tiling_sweep.sbatch`, `docs/sc26_compression_experiment_plan.md` |
 
 ## Current Reconstruction Results for Yifan
 
@@ -126,6 +127,8 @@ The 2026-05-12 DeltaAI GH200 pilot validates the tiling path for Yifan's current
 | `2048 x 2048` tile | 95.39 s | 43.8 GB | 66.04x | 29.90 | 0.8841 | 0.031026 |
 
 Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. Visual inspection of the saved overview and seam-region examples found no obvious grid-like stitching seams in the checked sample. This is the current weekly result; before final poster reporting, rerun the selected setup on a larger image set.
+
+Next run: add `256 x 256` to the same tiling sweep and inspect the new heatmap comparison panels. The updated runner reports MSE, RMSE, MAE, high-percentile absolute errors, maximum absolute error, and mean bias in addition to compression ratio, PSNR, SSIM, and seam metrics.
 
 ## Results Index
 

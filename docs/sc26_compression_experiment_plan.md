@@ -14,7 +14,7 @@ Make CDC compression fast, scalable, and storage-efficient enough for the SC26 p
 | `experiments/compression/configs/deltaai_paths.env` | DeltaAI paths, checkpoint names, and default image counts |
 | `experiments/compression/slurm/01_baseline_resolution_batch.sbatch` | Baseline, batch-size, and resolution sweep |
 | `experiments/compression/slurm/02_checkpoint_level_sweep.sbatch` | Compression-level sweep through checkpoints |
-| `experiments/compression/slurm/03_tiling_sweep.sbatch` | 512, 1024, and 2048 tiling experiment |
+| `experiments/compression/slurm/03_tiling_sweep.sbatch` | 256, 512, 1024, and 2048 tiling experiment |
 | `experiments/compression/slurm/04_hpc_scaling_array.sbatch` | Multiple jobs in parallel |
 | `experiments/compression/slurm/05_storage_compare.sbatch` | Shared filesystem vs node-local staged storage |
 | `experiments/compression/slurm/06_summarize_all.sbatch` | Final all-run summary table |
@@ -50,7 +50,7 @@ RUN_STAMP=20260504_meeting_prep N_IMAGES=8 experiments/compression/slurm/run_all
 - native full-resolution images
 - pretrained x-param checkpoint `b0.2048`
 - batch sizes: 1, 2, 4
-- metrics: runtime, peak GPU memory, BPP, compression ratio, PSNR, SSIM
+- metrics: runtime, peak GPU memory, BPP, compression ratio, PSNR, SSIM, MSE, RMSE, MAE, high-percentile absolute error, mean bias
 
 ### Resolution Sweep
 
@@ -68,7 +68,7 @@ Output:
 - checkpoint vs runtime
 - checkpoint vs BPP
 - checkpoint vs compression ratio
-- checkpoint vs PSNR and SSIM
+- checkpoint vs PSNR, SSIM, and pixel-error metrics
 
 ### Batch-Size Sweep
 
@@ -102,13 +102,28 @@ Use this to check whether I/O staging changes total wall time.
 
 Tile sizes:
 
+- 256 x 256
 - 512 x 512
 - 1024 x 1024
 - 2048 x 2048 if memory allows
 
 Each tile is compressed independently and stitched back together. The runner records seam artifact metrics and saves stitched visuals for inspection.
 
-Status on 2026-05-12: the DeltaAI GH200 `N_IMAGES=8` pilot completed for no tiling, `512 x 512`, `1024 x 1024`, and `2048 x 2048` tiles. The `512 x 512` case reduced wall time from `143.55` seconds to `86.01` seconds and peak GPU memory from `52.0` GB to `3.0` GB, with PSNR `29.73` and SSIM `0.8822`. Inspect the saved stitched visuals before using the result as a final poster figure.
+Status on 2026-05-12: the DeltaAI GH200 `N_IMAGES=8` pilot completed for no tiling, `512 x 512`, `1024 x 1024`, and `2048 x 2048` tiles. The `512 x 512` case reduced wall time from `143.55` seconds to `86.01` seconds and peak GPU memory from `52.0` GB to `3.0` GB, with PSNR `29.73` and SSIM `0.8822`.
+
+Next experiment: add a `256 x 256` tiling case and rerun the same image subset first. This tests whether smaller tiles reduce memory further, whether many small tiles add enough overhead to slow the run, and whether fine-grained tile boundaries create visible artifacts. Keep `512 x 512` as the current baseline to beat.
+
+Run order:
+
+1. `256 x 256` smoke test on two images.
+2. Full tiling sweep on eight images: no tiling, `256 x 256`, `512 x 512`, `1024 x 1024`, and `2048 x 2048`.
+3. Larger selected-run validation after the best setup is clear.
+
+Quality checks:
+
+- numeric table: compression ratio, PSNR, SSIM, MSE, RMSE, MAE, `error_p95`, `error_p99`, seam metrics
+- visual table: original preview, reconstruction preview, absolute-error heatmap, side-by-side comparison panel
+- failure mode to watch: regular tile-boundary patterns in heatmaps or seam-region crops
 
 ## Main Deliverable Table
 
@@ -116,14 +131,15 @@ Use `combined_summary.md` or `combined_summary.csv` from each run folder.
 
 Minimum columns for the meeting:
 
-| resolution | batch size | tile size | compression setting | time | peak GPU memory | compressed size | compression ratio | PSNR | SSIM | artifacts |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| native | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | none |
-| 4K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | none |
-| 2K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | none |
-| 1K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | none |
-| native | 4 | 512 | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | inspect seams |
-| native | 4 | 1024 | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | inspect seams |
+| resolution | batch size | tile size | compression setting | time | peak GPU memory | compressed size | compression ratio | PSNR | SSIM | MAE | error p99 | artifacts |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| native | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | none |
+| 4K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | none |
+| 2K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | none |
+| 1K | 1 | none | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | none |
+| native | 8 | 256 | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | heatmap + seams |
+| native | 4 | 512 | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | heatmap + seams |
+| native | 4 | 1024 | baseline_b02048 | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | heatmap + seams |
 
 ## First Commands to Run
 
@@ -132,17 +148,17 @@ Start with a small smoke-size run:
 ```bash
 cd /projects/bfod/$USER/cdc-deltaai/code
 N_IMAGES=2 sbatch experiments/compression/slurm/01_baseline_resolution_batch.sbatch
-N_IMAGES=2 sbatch experiments/compression/slurm/03_tiling_sweep.sbatch
+TILING_SIZES="256" N_IMAGES=2 SAVE_VISUAL_LIMIT=2 sbatch experiments/compression/slurm/03_tiling_sweep.sbatch
 ```
 
 If those succeed, run:
 
 ```bash
-N_IMAGES=8 experiments/compression/slurm/run_all_suite.sh
+TILING_SIZES="256 512 1024 2048" N_IMAGES=8 sbatch experiments/compression/slurm/03_tiling_sweep.sbatch
 ```
 
 For final poster numbers, rerun with:
 
 ```bash
-N_IMAGES=100 experiments/compression/slurm/run_all_suite.sh
+TILING_SIZES="256 512" N_IMAGES=100 SAVE_VISUAL_LIMIT=8 sbatch experiments/compression/slurm/03_tiling_sweep.sbatch
 ```

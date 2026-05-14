@@ -41,11 +41,17 @@ run_sc26_compression \
   --n_denoise_step "${N_DENOISE_STEP}" \
   --gamma "${GAMMA}" \
   --save_visual_limit "${SAVE_VISUAL_LIMIT}" \
+  --comparison_max_edge "${COMPARISON_MAX_EDGE}" \
   --storage_label "shared" \
   --notes "Reference run for tiling comparison."
 
 echo ">>> Tiling sweep"
-for TILE_SIZE in 512 1024 2048; do
+for TILE_SIZE in ${TILING_SIZES}; do
+  CURRENT_TILE_BATCH_SIZE="${TILE_BATCH_SIZE}"
+  if [[ "${TILE_SIZE}" == "256" ]]; then
+    CURRENT_TILE_BATCH_SIZE="${TILE_BATCH_SIZE_256}"
+  fi
+
   run_sc26_compression \
     --ckpt "${CKPT_BASELINE}" \
     --img_dir "${IMG_DIR}" \
@@ -55,16 +61,17 @@ for TILE_SIZE in 512 1024 2048; do
     --compression_setting "baseline_b02048" \
     --resolution_label "native_full_resolution" \
     --max_edge 0 \
-    --batch_size 4 \
+    --batch_size "${CURRENT_TILE_BATCH_SIZE}" \
     --tile_size "${TILE_SIZE}" \
-    --tile_batch_size 4 \
+    --tile_batch_size "${CURRENT_TILE_BATCH_SIZE}" \
     --n_images "${N_IMAGES}" \
     --start_index "${START_INDEX}" \
     --n_denoise_step "${N_DENOISE_STEP}" \
     --gamma "${GAMMA}" \
     --save_visual_limit "${SAVE_VISUAL_LIMIT}" \
+    --comparison_max_edge "${COMPARISON_MAX_EDGE}" \
     --storage_label "shared" \
-    --notes "Independent tile compression followed by direct stitching."
+    --notes "Independent ${TILE_SIZE} x ${TILE_SIZE} tile compression followed by direct stitching and heatmap-based visual comparison."
 done
 
 summarize_sc26_compression "${RUN_ROOT}"

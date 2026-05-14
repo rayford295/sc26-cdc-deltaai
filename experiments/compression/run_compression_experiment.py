@@ -7,7 +7,7 @@ The script supports the experiment axes requested for the next meeting:
 - image resolution: native, 4K, 2K, 1K, or any max-edge value
 - checkpoint-based compression sweep
 - full-image batch sizes
-- tiled inference with stitching-quality metrics
+- tiled inference with stitching-quality and reconstruction-difference metrics
 - shared/local storage labels for later comparison
 
 It writes one per-image CSV, one one-row summary CSV, a JSON manifest, and a
@@ -73,6 +73,7 @@ class ExperimentConfig:
     fp16: bool = False
     save_visual_limit: int = 2
     save_all_images: bool = False
+    comparison_max_edge: int = 1600
     storage_label: str = "shared"
     notes: str = ""
 
@@ -123,6 +124,15 @@ def parse_args() -> ExperimentConfig:
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument("--save_visual_limit", type=int, default=2)
     parser.add_argument("--save_all_images", action="store_true")
+    parser.add_argument(
+        "--comparison_max_edge",
+        type=int,
+        default=1600,
+        help=(
+            "Longest edge for saved original/reconstruction/heatmap preview panels. "
+            "Use 0 for native size."
+        ),
+    )
     parser.add_argument("--storage_label", default="shared")
     parser.add_argument("--notes", default="")
     args = parser.parse_args()
@@ -133,6 +143,8 @@ def parse_args() -> ExperimentConfig:
         raise ValueError("--tile_size must be a multiple of 64")
     if args.tile_batch_size < 0:
         raise ValueError("--tile_batch_size must be >= 0")
+    if args.comparison_max_edge < 0:
+        raise ValueError("--comparison_max_edge must be >= 0")
     return ExperimentConfig(**vars(args))
 
 
@@ -281,17 +293,131 @@ def common_crop(images: list[tuple[pathlib.Path, torch.Tensor, dict[str, int]]])
     return cropped
 
 
-def compute_psnr_ssim(original: torch.Tensor, reconstructed: torch.Tensor) -> tuple[float, float]:
-    orig_np = (
-        original.detach().clamp(0, 1).squeeze(0).permute(1, 2, 0).cpu().numpy() * 255
-    ).astype(np.uint8)
-    recon_np = (
-        reconstructed.detach().clamp(0, 1).squeeze(0).permute(1, 2, 0).cpu().numpy() * 255
-    ).astype(np.uint8)
-    return (
-        float(psnr_fn(orig_np, recon_np, data_range=255)),
-        float(ssim_fn(orig_np, recon_np, data_range=255, channel_axis=2)),
+def compute_reconstruction_metrics(original: torch.Tensor, reconstructed: torch.Tensor) -> dict[str, float]:
+    """Compute scalar image-quality metrics for one original/reconstruction pair."""
+    orig = original.detach().clamp(0, 1).cpu().float()
+    recon = reconstructed.detach().clamp(0, 1).cpu().float()
+    diff = recon - orig
+    abs_diff = diff.abs()
+    mse = float((diff**2).mean().item())
+    rmse = math.sqrt(mse)
+    mae = float(abs_diff.mean().item())
+
+    orig_np = (orig.squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+    recon_np = (recon.squeeze(0).permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+    return {
+        "psnr_db": float(psnr_fn(orig_np, recon_np, data_range=255)),
+        "ssim": float(ssim_fn(orig_np, recon_np, data_range=255, channel_axis=2)),
+        "mse": mse,
+        "rmse": rmse,
+        "mae": mae,
+        "error_p95": float(torch.quantile(abs_diff.reshape(-1), 0.95).item()),
+        "error_p99": float(torch.quantile(abs_diff.reshape(-1), 0.99).item()),
+        "max_abs_error": float(abs_diff.max().item()),
+        "bias_mean": float(diff.mean().item()),
+    }
+
+
+def round_metrics(metrics: dict[str, float]) -> dict[str, float]:
+    return {
+        "psnr_db": round(metrics["psnr_db"], 4),
+        "ssim": round(metrics["ssim"], 6),
+        "mse": round(metrics["mse"], 8),
+        "rmse": round(metrics["rmse"], 8),
+        "mae": round(metrics["mae"], 8),
+        "error_p95": round(metrics["error_p95"], 8),
+        "error_p99": round(metrics["error_p99"], 8),
+        "max_abs_error": round(metrics["max_abs_error"], 8),
+        "bias_mean": round(metrics["bias_mean"], 8),
+    }
+
+
+def resize_preview(tensor: torch.Tensor, max_edge: int) -> torch.Tensor:
+    if max_edge <= 0:
+        return tensor
+    _, _, height, width = tensor.shape
+    current_max = max(height, width)
+    if current_max <= max_edge:
+        return tensor
+    scale = max_edge / float(current_max)
+    new_height = max(1, int(round(height * scale)))
+    new_width = max(1, int(round(width * scale)))
+    return F.interpolate(tensor, size=(new_height, new_width), mode="area")
+
+
+def error_heatmap(original: torch.Tensor, reconstructed: torch.Tensor) -> torch.Tensor:
+    orig = original.detach().clamp(0, 1).cpu().float()
+    recon = reconstructed.detach().clamp(0, 1).cpu().float()
+    error_map = (recon - orig).abs().mean(dim=1, keepdim=True)
+    robust_max = float(torch.quantile(error_map.reshape(-1), 0.995).item())
+    if robust_max <= 1e-8 or not math.isfinite(robust_max):
+        robust_max = 1.0
+    normalized = (error_map / robust_max).clamp(0, 1)[0, 0]
+
+    stops = torch.tensor(
+        [
+            [0.0, 0.0, 0.0],
+            [0.05, 0.05, 0.45],
+            [0.35, 0.0, 0.60],
+            [0.75, 0.10, 0.25],
+            [1.0, 0.55, 0.05],
+            [1.0, 1.0, 0.80],
+        ],
+        dtype=normalized.dtype,
     )
+    scaled = normalized * (len(stops) - 1)
+    lower = torch.floor(scaled).long().clamp(0, len(stops) - 1)
+    upper = (lower + 1).clamp(0, len(stops) - 1)
+    fraction = (scaled - lower.float()).unsqueeze(-1)
+    rgb = stops[lower] * (1.0 - fraction) + stops[upper] * fraction
+    return rgb.permute(2, 0, 1).unsqueeze(0).contiguous()
+
+
+def comparison_panel(
+    original: torch.Tensor,
+    reconstructed: torch.Tensor,
+    heatmap: torch.Tensor,
+    max_edge: int,
+) -> torch.Tensor:
+    orig = resize_preview(original.detach().clamp(0, 1).cpu().float(), max_edge)
+    recon = resize_preview(reconstructed.detach().clamp(0, 1).cpu().float(), max_edge)
+    heat = resize_preview(heatmap.detach().clamp(0, 1).cpu().float(), max_edge)
+    gutter_width = max(4, orig.shape[-1] // 120)
+    gutter = torch.ones((1, 3, orig.shape[-2], gutter_width), dtype=orig.dtype)
+    return torch.cat([orig, gutter, recon, gutter, heat], dim=-1)
+
+
+def save_visual_artifacts(
+    original: torch.Tensor,
+    reconstructed: torch.Tensor,
+    visuals_dir: pathlib.Path,
+    recon_filename: str,
+    preview_stem: str,
+    comparison_max_edge: int,
+) -> dict[str, object]:
+    recon_path = visuals_dir / recon_filename
+    torchvision.utils.save_image(reconstructed.detach().clamp(0, 1).cpu(), str(recon_path))
+
+    heatmap = error_heatmap(original, reconstructed)
+    original_preview = resize_preview(original.detach().clamp(0, 1).cpu().float(), comparison_max_edge)
+    heatmap_preview = resize_preview(heatmap, comparison_max_edge)
+    panel = comparison_panel(original, reconstructed, heatmap, comparison_max_edge)
+
+    original_path = visuals_dir / f"{preview_stem}_original_preview.png"
+    heatmap_path = visuals_dir / f"{preview_stem}_error_heatmap.png"
+    comparison_path = visuals_dir / f"{preview_stem}_comparison.png"
+    torchvision.utils.save_image(original_preview, str(original_path))
+    torchvision.utils.save_image(heatmap_preview, str(heatmap_path))
+    torchvision.utils.save_image(panel, str(comparison_path))
+
+    return {
+        "recon_path": str(recon_path),
+        "recon_png_bytes": os.path.getsize(recon_path),
+        "original_preview_path": str(original_path),
+        "error_heatmap_path": str(heatmap_path),
+        "comparison_path": str(comparison_path),
+        "comparison_max_edge": comparison_max_edge,
+    }
 
 
 def safe_ratio(bpp: float) -> float:
@@ -362,18 +488,28 @@ def run_full_image(
         for item_index, path in enumerate(batch_paths):
             recon_single = reconstructed[item_index : item_index + 1]
             orig_single = batch_tensor_cpu[item_index : item_index + 1]
-            psnr_val, ssim_val = compute_psnr_ssim(orig_single, recon_single)
+            quality_metrics = round_metrics(compute_reconstruction_metrics(orig_single, recon_single))
             bpp_val = float(bpp_values[item_index])
             width = int(batch_metas[item_index]["width"])
             height = int(batch_metas[item_index]["height"])
             estimated_bytes = estimated_bytes_from_bpp(width, height, bpp_val)
-            out_path = ""
-            recon_png_bytes = ""
+            visual_paths: dict[str, object] = {
+                "recon_path": "",
+                "recon_png_bytes": "",
+                "original_preview_path": "",
+                "error_heatmap_path": "",
+                "comparison_path": "",
+                "comparison_max_edge": "",
+            }
             if should_save_image(global_index, config):
-                out_file = visuals_dir / f"{path.stem}_recon.png"
-                torchvision.utils.save_image(recon_single.cpu(), str(out_file))
-                out_path = str(out_file)
-                recon_png_bytes = os.path.getsize(out_file)
+                visual_paths = save_visual_artifacts(
+                    orig_single,
+                    recon_single,
+                    visuals_dir,
+                    f"{path.stem}_recon.png",
+                    path.stem,
+                    config.comparison_max_edge,
+                )
 
             rows.append(
                 {
@@ -406,13 +542,11 @@ def run_full_image(
                     "bpp": round(bpp_val, 6),
                     "estimated_compressed_bytes": estimated_bytes if estimated_bytes is not None else "",
                     "compression_ratio": round(safe_ratio(bpp_val), 4),
-                    "psnr_db": round(psnr_val, 4),
-                    "ssim": round(ssim_val, 6),
+                    **quality_metrics,
                     "seam_error_mean": "",
                     "seam_error_max": "",
                     "orig_size_bytes": os.path.getsize(path),
-                    "recon_png_bytes": recon_png_bytes,
-                    "recon_path": out_path,
+                    **visual_paths,
                     "error": "",
                 }
             )
@@ -516,7 +650,7 @@ def run_tiled(
             torch.cuda.empty_cache()
 
         stitched = stitched[:, :, : meta["height"], : meta["width"]]
-        psnr_val, ssim_val = compute_psnr_ssim(original, stitched)
+        quality_metrics = round_metrics(compute_reconstruction_metrics(original, stitched))
         seam_mean, seam_max = seam_artifact_metrics(original, stitched, config.tile_size)
 
         total_bits = 0.0
@@ -527,13 +661,23 @@ def run_tiled(
         wall_sec = time.perf_counter() - wall_start
         image_end_ts = timestamp_fields("image_end")
 
-        out_path = ""
-        recon_png_bytes = ""
+        visual_paths: dict[str, object] = {
+            "recon_path": "",
+            "recon_png_bytes": "",
+            "original_preview_path": "",
+            "error_heatmap_path": "",
+            "comparison_path": "",
+            "comparison_max_edge": "",
+        }
         if should_save_image(image_index, config):
-            out_file = visuals_dir / f"{path.stem}_tile{config.tile_size}_stitched.png"
-            torchvision.utils.save_image(stitched.cpu(), str(out_file))
-            out_path = str(out_file)
-            recon_png_bytes = os.path.getsize(out_file)
+            visual_paths = save_visual_artifacts(
+                original,
+                stitched,
+                visuals_dir,
+                f"{path.stem}_tile{config.tile_size}_stitched.png",
+                f"{path.stem}_tile{config.tile_size}",
+                config.comparison_max_edge,
+            )
 
         rows.append(
             {
@@ -566,13 +710,11 @@ def run_tiled(
                 "bpp": round(float(effective_bpp), 6),
                 "estimated_compressed_bytes": estimated_bytes if estimated_bytes is not None else "",
                 "compression_ratio": round(safe_ratio(float(effective_bpp)), 4),
-                "psnr_db": round(psnr_val, 4),
-                "ssim": round(ssim_val, 6),
+                **quality_metrics,
                 "seam_error_mean": round(seam_mean, 8),
                 "seam_error_max": round(seam_max, 8),
                 "orig_size_bytes": os.path.getsize(path),
-                "recon_png_bytes": recon_png_bytes,
-                "recon_path": out_path,
+                **visual_paths,
                 "error": "",
                 "pad_h": pad_h,
                 "pad_w": pad_w,
@@ -651,7 +793,7 @@ def summarize_rows(
         "storage_label": config.storage_label,
         "mode": first.get("mode", ""),
         "tile_size": config.tile_size,
-        "tile_batch_size": config.tile_batch_size or config.batch_size if config.tile_size else "",
+        "tile_batch_size": (config.tile_batch_size or config.batch_size) if config.tile_size else "",
         "batch_size": config.batch_size,
         "precision": "fp16" if config.fp16 else "fp32",
         "n_denoise_step": config.n_denoise_step,
@@ -670,6 +812,13 @@ def summarize_rows(
         else avg("compression_ratio"),
         "avg_psnr_db": avg("psnr_db"),
         "avg_ssim": avg("ssim"),
+        "avg_mse": avg("mse"),
+        "avg_rmse": avg("rmse"),
+        "avg_mae": avg("mae"),
+        "avg_error_p95": avg("error_p95"),
+        "avg_error_p99": avg("error_p99"),
+        "avg_max_abs_error": avg("max_abs_error"),
+        "avg_bias_mean": avg("bias_mean"),
         "avg_seam_error_mean": avg("seam_error_mean"),
         "max_seam_error_max": max_value("seam_error_max"),
         "total_estimated_compressed_bytes": int(total_estimated_bytes) if total_estimated_bytes else "",
@@ -694,6 +843,7 @@ def write_report(path: pathlib.Path, summary: dict[str, object], config: Experim
         "resolution_label",
         "mode",
         "tile_size",
+        "tile_batch_size",
         "batch_size",
         "n_images",
         "avg_wall_sec",
@@ -703,6 +853,13 @@ def write_report(path: pathlib.Path, summary: dict[str, object], config: Experim
         "avg_compression_ratio",
         "avg_psnr_db",
         "avg_ssim",
+        "avg_mse",
+        "avg_rmse",
+        "avg_mae",
+        "avg_error_p95",
+        "avg_error_p99",
+        "avg_max_abs_error",
+        "avg_bias_mean",
         "avg_seam_error_mean",
         "max_seam_error_max",
     ]:

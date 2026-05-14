@@ -31,11 +31,32 @@ The tiling workflow is now runnable on DeltaAI and stable across the eight-image
 
 ## Next Step
 
-Rerun the selected setup on a larger image set:
+Add the missing `256 x 256` case before scaling the selected setup. This is the next experiment because `512 x 512` already looks strong, but `256 x 256` may lower memory further. The trade-off to measure is tile-management overhead and possible fine-grained boundary artifacts.
+
+Smoke test only the new tile size first:
 
 ```bash
 cd /projects/bfod/$USER/cdc-deltaai/code_tiling_fixed
-sbatch --export=ALL,REPO_DIR=/projects/bfod/$USER/cdc-deltaai/code_tiling_fixed,RUN_STAMP=20260512_yifan_tiling_final,N_IMAGES=50,SAVE_VISUAL_LIMIT=4 experiments/compression/slurm/03_tiling_sweep.sbatch
+sbatch --export=ALL,REPO_DIR=/projects/bfod/$USER/cdc-deltaai/code_tiling_fixed,RUN_STAMP=20260514_yifan_tile256_smoke,TILING_SIZES="256",N_IMAGES=2,SAVE_VISUAL_LIMIT=2 experiments/compression/slurm/03_tiling_sweep.sbatch
 ```
 
-Use `512 x 512` as the current recommended default for speed and memory. Keep `1024 x 1024` as the quality-oriented backup if later larger-sample visual checks show artifacts for smaller tiles.
+Then rerun the full tiling comparison on the same eight-image pilot scale:
+
+```bash
+cd /projects/bfod/$USER/cdc-deltaai/code_tiling_fixed
+sbatch --export=ALL,REPO_DIR=/projects/bfod/$USER/cdc-deltaai/code_tiling_fixed,RUN_STAMP=20260514_yifan_tiling_with_256,TILING_SIZES="256 512 1024 2048",N_IMAGES=8,SAVE_VISUAL_LIMIT=4 experiments/compression/slurm/03_tiling_sweep.sbatch
+```
+
+Use `512 x 512` as the current recommended default until the `256 x 256` numbers are available. Keep `1024 x 1024` as the quality-oriented backup if larger-sample visual checks show artifacts for smaller tiles.
+
+## Metric Notes for the Next Update
+
+Compression ratio is the storage-savings estimate. The runner computes it as `24 / bpp`, because uncompressed RGB uses 24 bits per pixel. A higher value means smaller model representation, but it does not by itself prove better visual quality.
+
+PSNR is a pixel-level fidelity score in decibels. Higher is better. It is useful for tracking reconstruction error, but it can miss artifacts that matter visually.
+
+SSIM is a structural similarity score from 0 to 1. Higher is better. It is closer to perceptual structure than PSNR because it compares local luminance, contrast, and texture patterns.
+
+The updated runner also records MSE, RMSE, MAE, `error_p95`, `error_p99`, maximum absolute error, and mean bias. These make the visual-quality story easier to defend because they show how large the residual errors are, not only whether PSNR and SSIM stayed close.
+
+For saved examples, use the new `*_comparison.png` panels and `*_error_heatmap.png` files. The comparison panel is ordered as original preview, reconstruction preview, and absolute-error heatmap. In the heatmap, dark regions have low reconstruction error and yellow-white regions have the largest residuals in that image.

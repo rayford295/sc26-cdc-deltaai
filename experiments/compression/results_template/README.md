@@ -18,7 +18,12 @@ results/YYYY-MM-DD-compression-suite/
 │   └── storage_compare.md
 └── visual_examples_small/
     ├── native_reference.png
+    ├── tile_256_stitched.png
+    ├── tile_256_error_heatmap.png
+    ├── tile_256_comparison.png
     ├── tile_512_stitched.png
+    ├── tile_512_error_heatmap.png
+    ├── tile_512_comparison.png
     └── tile_1024_stitched.png
 ```
 
