@@ -88,6 +88,7 @@ srun --account=bfod-delta-gpu --partition=gpuH200x8-interactive \
 | Phase 5 | May 2026 poster cycle | Run compression speed, storage, batching, tiling, and HPC scaling experiments. | `experiments/compression/`, `docs/sc26_compression_experiment_plan.md` |
 | Phase 5a | 2026-05-12 | Complete Yifan's DeltaAI tiling smoke test and `N_IMAGES=8` pilot for full-resolution images. | `results/2026-05-12-yifan-tiling-pilot/`, `results/2026-05-12-yifan-tiling-smoke/`, `docs/progress_2026-05-12_yifan_tiling.md` |
 | Phase 5b | 2026-05-14 | Prepare the follow-up `256 x 256` tiling run, add pixel-error metrics, and save original/reconstruction/error-heatmap panels. | `experiments/compression/run_compression_experiment.py`, `experiments/compression/slurm/03_tiling_sweep.sbatch`, `docs/progress_2026-05-14_yifan_tiling_next_steps.md` |
+| Phase 5c | 2026-05-15 to 2026-05-20 | Prepare Jacob's compression-side baseline, resolution, checkpoint, batch, scaling, and storage experiments for DeltaAI. | `experiments/compression/slurm/run_jacob_compression_suite.sh`, `docs/progress_2026-05-15_jacob_compression_prep.md` |
 
 ## Current Reconstruction Results for Yifan
 
@@ -165,6 +166,7 @@ Important files:
 | `results/2026-05-15-yifan-selected-256-512-n50/tables/combined_summary.csv` | Yifan `N_IMAGES=50` selected `256 x 256` vs `512 x 512` tiling summary |
 | `docs/progress_2026-05-12_yifan_tiling.md` | Weekly progress note for the tiling pilot result and next run |
 | `docs/progress_2026-05-14_yifan_tiling_next_steps.md` | Dated checklist for the `256 x 256` follow-up run, metrics, heatmap QA, and result-copy plan |
+| `docs/progress_2026-05-15_jacob_compression_prep.md` | DeltaAI runbook for Jacob's compression-side experiments due before 2026-05-20 |
 
 ## Slides Index
 

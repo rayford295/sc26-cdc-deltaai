@@ -15,6 +15,7 @@ This folder contains the runnable experiment scaffold for the next compression m
 | Multiple parallel jobs | `slurm/04_hpc_scaling_array.sbatch` |
 | Shared vs local storage | `slurm/05_storage_compare.sbatch` |
 | Final all-run summary | `slurm/06_summarize_all.sbatch` |
+| Jacob compression-side suite, no tiling | `slurm/run_jacob_compression_suite.sh` |
 | Combined tables | `summarize_results.py` |
 
 ## Important Compression-Level Finding
@@ -182,6 +183,14 @@ Submit the whole suite:
 ```bash
 N_IMAGES=8 experiments/compression/slurm/run_all_suite.sh
 ```
+
+Run Jacob's compression-side suite without the tiling sweep:
+
+```bash
+RUN_STAMP=20260515_jacob_compression_smoke N_IMAGES=4 SHARD_IMAGES=4 SAVE_VISUAL_LIMIT=1 experiments/compression/slurm/run_jacob_compression_suite.sh
+```
+
+Use this Jacob launcher for the group-chat task about baseline compression, resolution sweep, compression-level candidates, batch size, HPC scaling, and storage comparison. It skips tiling because that belongs to Yifan's reconstruction/tiling workflow.
 
 To choose a timestamp yourself:
 

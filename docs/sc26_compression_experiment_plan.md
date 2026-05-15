@@ -19,6 +19,7 @@ Make CDC compression fast, scalable, and storage-efficient enough for the SC26 p
 | `experiments/compression/slurm/05_storage_compare.sbatch` | Shared filesystem vs node-local staged storage |
 | `experiments/compression/slurm/06_summarize_all.sbatch` | Final all-run summary table |
 | `experiments/compression/slurm/run_all_suite.sh` | Submits the full suite |
+| `experiments/compression/slurm/run_jacob_compression_suite.sh` | Submits Jacob's compression-side suite without tiling |
 
 ## Timestamp Convention
 
@@ -149,6 +150,12 @@ Start with a small smoke-size run:
 cd /projects/bfod/$USER/cdc-deltaai/code
 N_IMAGES=2 sbatch experiments/compression/slurm/01_baseline_resolution_batch.sbatch
 TILING_SIZES="256" N_IMAGES=2 SAVE_VISUAL_LIMIT=2 sbatch experiments/compression/slurm/03_tiling_sweep.sbatch
+```
+
+For Jacob's compression-side task, use the dedicated no-tiling launcher:
+
+```bash
+RUN_STAMP=20260515_jacob_compression_smoke N_IMAGES=4 SHARD_IMAGES=4 SAVE_VISUAL_LIMIT=1 experiments/compression/slurm/run_jacob_compression_suite.sh
 ```
 
 If those succeed, run:
