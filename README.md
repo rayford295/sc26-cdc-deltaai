@@ -126,9 +126,9 @@ The 2026-05-12 DeltaAI GH200 pilot validates the tiling path for Yifan's current
 | `1024 x 1024` tile | 88.35 s | 11.2 GB | 66.11x | 29.82 | 0.8835 | 0.028595 |
 | `2048 x 2048` tile | 95.39 s | 43.8 GB | 66.04x | 29.90 | 0.8841 | 0.031026 |
 
-Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. Visual inspection of the saved overview and seam-region examples found no obvious grid-like stitching seams in the checked sample. This is the current weekly result; before final poster reporting, rerun the selected setup on a larger image set.
+Interpretation: `512 x 512` tiling reduced wall time by about 40 percent and peak GPU memory by about 17.2x in this pilot, while PSNR and SSIM stayed close to the no-tiling reference. Visual inspection of the saved overview and seam-region examples found no obvious grid-like stitching seams in the checked sample.
 
-Next run: add `256 x 256` to the same tiling sweep and inspect the new heatmap comparison panels. The updated runner reports MSE, RMSE, MAE, high-percentile absolute errors, maximum absolute error, and mean bias in addition to compression ratio, PSNR, SSIM, and seam metrics.
+The 2026-05-15 selected `N_IMAGES=50` follow-up compared no tiling, `256 x 256`, and `512 x 512`. `256 x 256` is now the best speed and memory candidate: `79.84 s/image`, `1.66 GB` peak GPU memory, `68.24x` compression ratio, PSNR `28.78`, SSIM `0.8552`, and seam metric `0.032556`. Keep `512 x 512` as the quality-safe backup because it has slightly better PSNR, SSIM, MAE, and high-percentile error.
 
 ## Results Index
 
@@ -139,7 +139,8 @@ results/
 ├── 2026-04-26-reconstruction/       # DeltaAI GH200 full reconstruction sweep
 ├── 2026-04-28-h200-reconstruction/  # Delta H200 quick comparison sweep
 ├── 2026-05-12-yifan-tiling-smoke/   # DeltaAI GH200 tiling smoke test
-└── 2026-05-12-yifan-tiling-pilot/   # DeltaAI GH200 tiling pilot
+├── 2026-05-12-yifan-tiling-pilot/   # DeltaAI GH200 tiling pilot
+└── 2026-05-15-yifan-selected-256-512-n50/  # DeltaAI GH200 selected 256 vs 512 comparison
 ```
 
 Important files:
@@ -161,6 +162,7 @@ Important files:
 | `results/2026-05-12-yifan-tiling-pilot/tables/combined_summary.csv` | Yifan `N_IMAGES=8` tiling pilot summary |
 | `results/2026-05-12-yifan-tiling-pilot/visual_examples_small/` | Lightweight overview and seam-region examples for visual artifact checking |
 | `results/2026-05-12-yifan-tiling-smoke/tables/combined_summary.csv` | Yifan tiling smoke-test summary |
+| `results/2026-05-15-yifan-selected-256-512-n50/tables/combined_summary.csv` | Yifan `N_IMAGES=50` selected `256 x 256` vs `512 x 512` tiling summary |
 | `docs/progress_2026-05-12_yifan_tiling.md` | Weekly progress note for the tiling pilot result and next run |
 | `docs/progress_2026-05-14_yifan_tiling_next_steps.md` | Dated checklist for the `256 x 256` follow-up run, metrics, heatmap QA, and result-copy plan |
 
