@@ -293,6 +293,15 @@ def common_crop(images: list[tuple[pathlib.Path, torch.Tensor, dict[str, int]]])
     return cropped
 
 
+def sampled_quantile(tensor: torch.Tensor, q: float, max_values: int = 1_000_000) -> float:
+    """Approximate a quantile without materializing every full-resolution pixel."""
+    flat = tensor.reshape(-1)
+    if flat.numel() > max_values:
+        step = math.ceil(flat.numel() / max_values)
+        flat = flat[::step]
+    return float(torch.quantile(flat.contiguous(), q).item())
+
+
 def compute_reconstruction_metrics(original: torch.Tensor, reconstructed: torch.Tensor) -> dict[str, float]:
     """Compute scalar image-quality metrics for one original/reconstruction pair."""
     orig = original.detach().clamp(0, 1).cpu().float()
@@ -311,8 +320,8 @@ def compute_reconstruction_metrics(original: torch.Tensor, reconstructed: torch.
         "mse": mse,
         "rmse": rmse,
         "mae": mae,
-        "error_p95": float(torch.quantile(abs_diff.reshape(-1), 0.95).item()),
-        "error_p99": float(torch.quantile(abs_diff.reshape(-1), 0.99).item()),
+        "error_p95": sampled_quantile(abs_diff, 0.95),
+        "error_p99": sampled_quantile(abs_diff, 0.99),
         "max_abs_error": float(abs_diff.max().item()),
         "bias_mean": float(diff.mean().item()),
     }
@@ -349,7 +358,7 @@ def error_heatmap(original: torch.Tensor, reconstructed: torch.Tensor) -> torch.
     orig = original.detach().clamp(0, 1).cpu().float()
     recon = reconstructed.detach().clamp(0, 1).cpu().float()
     error_map = (recon - orig).abs().mean(dim=1, keepdim=True)
-    robust_max = float(torch.quantile(error_map.reshape(-1), 0.995).item())
+    robust_max = sampled_quantile(error_map, 0.995)
     if robust_max <= 1e-8 or not math.isfinite(robust_max):
         robust_max = 1.0
     normalized = (error_map / robust_max).clamp(0, 1)[0, 0]
