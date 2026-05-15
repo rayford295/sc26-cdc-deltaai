@@ -47,5 +47,11 @@ Before using `256 x 256` as the final poster recommendation, inspect the saved `
 | --- | --- |
 | `tables/combined_summary.csv` | Machine-readable selected-run summary |
 | `tables/combined_summary.md` | Markdown table copied from the DeltaAI combined summary |
+| `visual_examples_small/100_0005_0001_comparison.jpg` | No-tiling original/reconstruction/error-heatmap panel |
+| `visual_examples_small/100_0005_0001_error_heatmap.jpg` | No-tiling absolute RGB reconstruction-error heatmap |
+| `visual_examples_small/100_0005_0001_tile256_comparison.jpg` | `256 x 256` original/reconstruction/error-heatmap panel |
+| `visual_examples_small/100_0005_0001_tile256_error_heatmap.jpg` | `256 x 256` absolute RGB reconstruction-error heatmap |
+| `visual_examples_small/100_0005_0001_tile512_comparison.jpg` | `512 x 512` original/reconstruction/error-heatmap panel |
+| `visual_examples_small/100_0005_0001_tile512_error_heatmap.jpg` | `512 x 512` absolute RGB reconstruction-error heatmap |
 
-Visual QA files were generated on DeltaAI during this run. They are not yet committed in this lightweight GitHub result folder because the image archive still needs to be copied back from the cluster.
+The committed visual examples are downsampled JPEG previews from image `100_0005_0001`. The full visual archive remains on DeltaAI.
